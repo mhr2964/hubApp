@@ -1,0 +1,11 @@
+.block-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-content: flex-start;
+  padding-bottom: 32px;
+}
+
+.block-item {
+  min-width: 0;
+}
