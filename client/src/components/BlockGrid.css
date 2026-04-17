@@ -21,7 +21,16 @@
   animation: block-float var(--float-dur, 4s) ease-in-out var(--float-delay, 0s) infinite both;
 }
 
+.block-overlay {
+  width: 100%;
+  opacity: 0.9;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  cursor: grabbing;
+}
+
 @keyframes block-float {
   0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(calc(-1 * var(--float-amp, 8px))); }
+  50%       { transform: translateY(calc(-1 * var(--float-amp, 5px))); }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import {
   SortableContext, rectSortingStrategy, useSortable, arrayMove,
@@ -25,15 +25,15 @@ const SIZE_FLEX = {
   large:  { basis: '500px', grow: 3, height: '340px' },
 };
 
-// Stable pseudo-random float params derived from block id so they don't re-randomize on render
+// Stable per-block params so they don't re-randomize on render
 function floatParams(id) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
   h = Math.abs(h);
   return {
-    duration: `${3.5 + (h % 35) / 10}s`,
-    delay:    `-${(h % 30) / 10}s`,
-    amplitude: `${7 + (h % 7)}px`,
+    duration:  `${6 + (h % 60) / 10}s`,  // 6–12s
+    delay:     `-${(h % 50) / 10}s`,
+    amplitude: `${4 + (h % 3)}px`,        // 4–6px, under the 12px gap
   };
 }
 
@@ -64,7 +64,8 @@ function SortableBlock({ block }) {
         height,
         transform: CSS.Transform.toString(transform),
         transition,
-        zIndex: isDragging ? 999 : 1,
+        // Stay in layout but invisible — overlay takes visual ownership during drag
+        opacity: isDragging ? 0 : 1,
       }}
       {...attributes}
       {...listeners}
@@ -72,9 +73,9 @@ function SortableBlock({ block }) {
       <div
         className="block-float"
         style={{
-          '--float-dur': duration,
+          '--float-dur':   duration,
           '--float-delay': delay,
-          '--float-amp': amplitude,
+          '--float-amp':   amplitude,
           animationPlayState: isDragging ? 'paused' : 'running',
         }}
       >
@@ -84,25 +85,50 @@ function SortableBlock({ block }) {
   );
 }
 
+function OverlayBlock({ block }) {
+  const size = block.size || TYPE_DEFAULT_SIZE[block.type] || 'medium';
+  const { height } = SIZE_FLEX[size];
+  return (
+    <div className="block-overlay" style={{ height }}>
+      <BlockComponent block={block} />
+    </div>
+  );
+}
+
 export default function BlockGrid({ blocks: propBlocks }) {
   const [blocks, setBlocks] = useState(propBlocks);
+  const [activeId, setActiveId] = useState(null);
+
   useEffect(() => setBlocks(propBlocks), [propBlocks]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
+  const activeBlock = activeId ? blocks.find(b => b.id === activeId) : null;
+
+  const handleDragStart = ({ active }) => setActiveId(active.id);
+
   const handleDragEnd = ({ active, over }) => {
+    setActiveId(null);
     if (!over || active.id === over.id) return;
     const oldIdx = blocks.findIndex(b => b.id === active.id);
     const newIdx = blocks.findIndex(b => b.id === over.id);
     setBlocks(prev => arrayMove(prev, oldIdx, newIdx));
   };
 
+  const handleDragCancel = () => setActiveId(null);
+
   if (blocks.length === 0) return <p className="empty-state">nothing here yet.</p>;
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
       <SortableContext items={blocks.map(b => b.id)} strategy={rectSortingStrategy}>
         <div className="block-grid">
           {blocks.map(block => (
@@ -110,6 +136,10 @@ export default function BlockGrid({ blocks: propBlocks }) {
           ))}
         </div>
       </SortableContext>
+
+      <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+        {activeBlock && <OverlayBlock block={activeBlock} />}
+      </DragOverlay>
     </DndContext>
   );
 }
