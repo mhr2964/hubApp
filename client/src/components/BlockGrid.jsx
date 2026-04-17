@@ -29,17 +29,25 @@ const TYPE_DEFAULT_SIZE = {
 
 function generateLayout(blocks) {
   const shuffled = [...blocks].sort(() => Math.random() - 0.5);
-  return shuffled.map(block => {
+  const result = [];
+  let x = 0, y = 0, rowH = 0;
+
+  for (const block of shuffled) {
     const size = block.size || TYPE_DEFAULT_SIZE[block.type] || 'medium';
     const { w, h } = SIZE_UNITS[size] || SIZE_UNITS.medium;
-    return {
-      i: block.id,
-      x: Math.floor(Math.random() * (COLS - w + 1)),
-      y: Infinity,
-      w,
-      h,
-    };
-  });
+
+    if (x + w > COLS) {
+      y += rowH;
+      x = 0;
+      rowH = 0;
+    }
+
+    result.push({ i: block.id, x, y, w, h });
+    x += w;
+    rowH = Math.max(rowH, h);
+  }
+
+  return result;
 }
 
 function BlockComponent({ block }) {
@@ -70,7 +78,7 @@ export default function BlockGrid({ blocks }) {
       rowHeight={ROW_HEIGHT}
       isDraggable
       isResizable={false}
-      compactType="vertical"
+      compactType="horizontal"
       margin={[12, 12]}
       onLayoutChange={setLayout}
     >
