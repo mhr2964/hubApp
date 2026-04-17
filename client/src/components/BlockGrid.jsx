@@ -19,21 +19,22 @@ const TYPE_DEFAULT_SIZE = {
   link:     'small',
 };
 
-const SIZE_FLEX = {
-  small:  { basis: '200px', grow: 1, height: '180px' },
-  medium: { basis: '320px', grow: 2, height: '260px' },
-  large:  { basis: '500px', grow: 3, height: '340px' },
+// Grid is 12 columns. Spans determine proportional widths — no stretching.
+const SIZE_GRID = {
+  small:  { span: 3, height: '200px' },
+  medium: { span: 4, height: '280px' },
+  large:  { span: 6, height: '360px' },
 };
 
-// Stable per-block params so they don't re-randomize on render
+// Stable pseudo-random float params per block id
 function floatParams(id) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
   h = Math.abs(h);
   return {
-    duration:  `${6 + (h % 60) / 10}s`,  // 6–12s
-    delay:     `-${(h % 50) / 10}s`,
-    amplitude: `${4 + (h % 3)}px`,        // 4–6px, under the 12px gap
+    duration:  `${7 + (h % 60) / 10}s`,
+    delay:     `-${(h % 60) / 10}s`,
+    amplitude: `${4 + (h % 3)}px`,
   };
 }
 
@@ -49,7 +50,7 @@ function BlockComponent({ block }) {
 
 function SortableBlock({ block }) {
   const size = block.size || TYPE_DEFAULT_SIZE[block.type] || 'medium';
-  const { basis, grow, height } = SIZE_FLEX[size];
+  const { span, height } = SIZE_GRID[size];
   const { duration, delay, amplitude } = floatParams(block.id);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
@@ -59,12 +60,10 @@ function SortableBlock({ block }) {
       ref={setNodeRef}
       className="block-item"
       style={{
-        flexBasis: basis,
-        flexGrow: grow,
+        gridColumn: `span ${span}`,
         height,
         transform: CSS.Transform.toString(transform),
         transition,
-        // Stay in layout but invisible — overlay takes visual ownership during drag
         opacity: isDragging ? 0 : 1,
       }}
       {...attributes}
@@ -87,9 +86,11 @@ function SortableBlock({ block }) {
 
 function OverlayBlock({ block }) {
   const size = block.size || TYPE_DEFAULT_SIZE[block.type] || 'medium';
-  const { height } = SIZE_FLEX[size];
+  const { span, height } = SIZE_GRID[size];
+  // Approximate pixel width for the overlay (grid not available outside DndContext portal)
+  const approxWidth = `${(span / 12) * 100}%`;
   return (
-    <div className="block-overlay" style={{ height }}>
+    <div className="block-overlay" style={{ height, width: approxWidth }}>
       <BlockComponent block={block} />
     </div>
   );
@@ -111,6 +112,15 @@ export default function BlockGrid({ blocks: propBlocks }) {
 
   const handleDragEnd = ({ active, over }) => {
     setActiveId(null);
+
+    // Suppress the browser click that fires on pointer-up after a drag
+    const suppressClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      document.removeEventListener('click', suppressClick, true);
+    };
+    document.addEventListener('click', suppressClick, true);
+
     if (!over || active.id === over.id) return;
     const oldIdx = blocks.findIndex(b => b.id === active.id);
     const newIdx = blocks.findIndex(b => b.id === over.id);
@@ -137,7 +147,7 @@ export default function BlockGrid({ blocks: propBlocks }) {
         </div>
       </SortableContext>
 
-      <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+      <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
         {activeBlock && <OverlayBlock block={activeBlock} />}
       </DragOverlay>
     </DndContext>

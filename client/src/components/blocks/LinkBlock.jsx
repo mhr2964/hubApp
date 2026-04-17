@@ -1,28 +1,12 @@
-import { useRef } from 'react';
 import './blocks.css';
 
 export default function LinkBlock({ block }) {
-  const origin = useRef(null);
-
-  const handleMouseDown = (e) => {
-    origin.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handleClick = (e) => {
-    if (!origin.current) return;
-    const dx = Math.abs(e.clientX - origin.current.x);
-    const dy = Math.abs(e.clientY - origin.current.y);
-    if (dx > 6 || dy > 6) e.preventDefault();
-  };
-
   return (
     <a
       href={block.url}
       target="_blank"
       rel="noopener noreferrer"
       className="block link-block"
-      onMouseDown={handleMouseDown}
-      onClick={handleClick}
     >
       {block.og_image && <img src={block.og_image} className="link-og-image" alt="" />}
       <div className="link-content">
