@@ -6,10 +6,36 @@
     "date": "2026-03-01",
     "tags": ["music", "ambient"],
     "size": "small",
-    "src": "https://soundcloud.com/example/interlude-3",
+    "src": null,
     "artist": "mhr",
     "album": "Sketches",
-    "album_art": null,
+    "album_art": "https://picsum.photos/seed/interlude3/400/400",
     "description": null
+  },
+  {
+    "id": "audio-2",
+    "type": "audio",
+    "title": "Late Loop",
+    "date": "2026-02-10",
+    "tags": ["music", "beats"],
+    "size": "small",
+    "src": null,
+    "artist": "mhr",
+    "album": "Sketches",
+    "album_art": "https://picsum.photos/seed/lateloop/400/400",
+    "description": "Made at 2am"
+  },
+  {
+    "id": "audio-3",
+    "type": "audio",
+    "title": "Untitled Piano",
+    "date": "2026-01-15",
+    "tags": ["music", "piano"],
+    "size": "medium",
+    "src": null,
+    "artist": "mhr",
+    "album": null,
+    "album_art": "https://picsum.photos/seed/pianoroom/400/400",
+    "description": "First take, kept it"
   }
 ]

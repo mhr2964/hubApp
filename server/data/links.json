@@ -10,5 +10,53 @@
     "description": "A short piece on consistency over intensity.",
     "og_image": null,
     "favicon": "https://www.google.com/s2/favicons?domain=example.com"
+  },
+  {
+    "id": "link-2",
+    "type": "link",
+    "title": "Why Figma Won",
+    "date": "2026-03-18",
+    "tags": ["reading", "design", "tech"],
+    "size": "small",
+    "url": "https://figma.com",
+    "description": "How multiplayer changed everything in design tools.",
+    "og_image": null,
+    "favicon": "https://www.google.com/s2/favicons?domain=figma.com"
+  },
+  {
+    "id": "link-3",
+    "type": "link",
+    "title": "The Mess Before the Thing",
+    "date": "2026-03-04",
+    "tags": ["reading", "creativity"],
+    "size": "small",
+    "url": "https://example.com/mess",
+    "description": "On the value of ugly drafts and unfinished ideas.",
+    "og_image": null,
+    "favicon": "https://www.google.com/s2/favicons?domain=example.com"
+  },
+  {
+    "id": "link-4",
+    "type": "link",
+    "title": "Linear's Design Language",
+    "date": "2026-02-20",
+    "tags": ["reading", "design"],
+    "size": "small",
+    "url": "https://linear.app",
+    "description": "What it means to be opinionated about software.",
+    "og_image": null,
+    "favicon": "https://www.google.com/s2/favicons?domain=linear.app"
+  },
+  {
+    "id": "link-5",
+    "type": "link",
+    "title": "Attention is All You Have",
+    "date": "2026-01-12",
+    "tags": ["reading"],
+    "size": "small",
+    "url": "https://example.com/attention",
+    "description": "What the transformer paper title actually means for how we live.",
+    "og_image": null,
+    "favicon": "https://www.google.com/s2/favicons?domain=example.com"
   }
 ]

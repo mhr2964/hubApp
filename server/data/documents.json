@@ -18,5 +18,35 @@
     "size": "large",
     "src": "documents/notes-on-attention.md",
     "preview": "What you pay attention to is what you become."
+  },
+  {
+    "id": "doc-3",
+    "type": "document",
+    "title": "Systems vs. Goals",
+    "date": "2026-02-18",
+    "tags": ["writing", "notes"],
+    "size": "medium",
+    "src": null,
+    "preview": "Goals are for direction. Systems are for showing up."
+  },
+  {
+    "id": "doc-4",
+    "type": "document",
+    "title": "On Solitude",
+    "date": "2026-01-30",
+    "tags": ["writing", "essay"],
+    "size": "small",
+    "src": null,
+    "preview": "There is a difference between loneliness and being alone with yourself."
+  },
+  {
+    "id": "doc-5",
+    "type": "document",
+    "title": "Fragment: The Room",
+    "date": "2025-12-11",
+    "tags": ["writing", "fiction"],
+    "size": "medium",
+    "src": null,
+    "preview": "He kept the window open even in winter. Said it reminded him that the world outside was still moving."
   }
 ]

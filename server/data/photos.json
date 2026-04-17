@@ -6,7 +6,7 @@
     "date": "2026-02-14",
     "tags": ["photography", "urban"],
     "size": "medium",
-    "src": "photos/placeholder.jpg",
+    "src": "https://picsum.photos/seed/cityatdawn/800/600",
     "caption": "Shot on a cold February morning",
     "alt": "City skyline at dawn with orange light"
   },
@@ -17,8 +17,52 @@
     "date": "2026-01-08",
     "tags": ["photography", "still life"],
     "size": "small",
-    "src": "photos/placeholder.jpg",
+    "src": "https://picsum.photos/seed/deskobjects/600/600",
     "caption": null,
     "alt": "Objects on a desk"
+  },
+  {
+    "id": "photo-3",
+    "type": "photo",
+    "title": "Overcast, March",
+    "date": "2026-03-05",
+    "tags": ["photography", "landscape"],
+    "size": "large",
+    "src": "https://picsum.photos/seed/overcastmarch/1200/800",
+    "caption": "Somewhere between Rochester and Buffalo",
+    "alt": "Grey sky over flat land"
+  },
+  {
+    "id": "photo-4",
+    "type": "photo",
+    "title": "Window Light",
+    "date": "2026-02-28",
+    "tags": ["photography", "interior"],
+    "size": "small",
+    "src": "https://picsum.photos/seed/windowlight/600/700",
+    "caption": null,
+    "alt": "Afternoon light through a window"
+  },
+  {
+    "id": "photo-5",
+    "type": "photo",
+    "title": "Rain on Glass",
+    "date": "2026-01-22",
+    "tags": ["photography"],
+    "size": "medium",
+    "src": "https://picsum.photos/seed/rainonglass/800/600",
+    "caption": "Waiting",
+    "alt": "Raindrops on a window pane"
+  },
+  {
+    "id": "photo-6",
+    "type": "photo",
+    "title": "Night Walk",
+    "date": "2025-12-30",
+    "tags": ["photography", "urban"],
+    "size": "medium",
+    "src": "https://picsum.photos/seed/nightwalk/800/1000",
+    "caption": "11pm, empty streets",
+    "alt": "Empty street at night under orange lamps"
   }
 ]
