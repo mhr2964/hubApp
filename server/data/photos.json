@@ -1,0 +1,24 @@
+[
+  {
+    "id": "photo-1",
+    "type": "photo",
+    "title": "City at Dawn",
+    "date": "2026-02-14",
+    "tags": ["photography", "urban"],
+    "size": "medium",
+    "src": "photos/placeholder.jpg",
+    "caption": "Shot on a cold February morning",
+    "alt": "City skyline at dawn with orange light"
+  },
+  {
+    "id": "photo-2",
+    "type": "photo",
+    "title": "Study",
+    "date": "2026-01-08",
+    "tags": ["photography", "still life"],
+    "size": "small",
+    "src": "photos/placeholder.jpg",
+    "caption": null,
+    "alt": "Objects on a desk"
+  }
+]

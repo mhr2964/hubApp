@@ -1,0 +1,14 @@
+[
+  {
+    "id": "link-1",
+    "type": "link",
+    "title": "The Unreasonable Effectiveness of Just Showing Up",
+    "date": "2026-04-01",
+    "tags": ["reading"],
+    "size": "small",
+    "url": "https://example.com",
+    "description": "A short piece on consistency over intensity.",
+    "og_image": null,
+    "favicon": "https://www.google.com/s2/favicons?domain=example.com"
+  }
+]

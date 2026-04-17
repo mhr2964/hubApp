@@ -1,0 +1,55 @@
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-btn {
+  padding: 6px 14px;
+  border: 1px solid #444;
+  border-radius: 20px;
+  background: transparent;
+  color: #aaa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+.filter-btn:hover {
+  border-color: #aaa;
+  color: #fff;
+}
+
+.filter-btn.active {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
+}
+
+.search-input {
+  padding: 6px 14px;
+  border: 1px solid #444;
+  border-radius: 20px;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  width: 180px;
+  transition: border-color 0.15s ease;
+}
+
+.search-input::placeholder {
+  color: #555;
+}
+
+.search-input:focus {
+  border-color: #aaa;
+}

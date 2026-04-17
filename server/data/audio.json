@@ -1,0 +1,15 @@
+[
+  {
+    "id": "audio-1",
+    "type": "audio",
+    "title": "Interlude No. 3",
+    "date": "2026-03-01",
+    "tags": ["music", "ambient"],
+    "size": "small",
+    "src": "https://soundcloud.com/example/interlude-3",
+    "artist": "mhr",
+    "album": "Sketches",
+    "album_art": null,
+    "description": null
+  }
+]

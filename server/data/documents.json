@@ -1,0 +1,22 @@
+[
+  {
+    "id": "doc-1",
+    "type": "document",
+    "title": "On Building Things",
+    "date": "2026-04-10",
+    "tags": ["writing", "essay"],
+    "size": "medium",
+    "src": "documents/on-building-things.md",
+    "preview": "The act of making something from nothing is the closest we get to understanding what we are."
+  },
+  {
+    "id": "doc-2",
+    "type": "document",
+    "title": "Notes on Attention",
+    "date": "2026-03-22",
+    "tags": ["writing", "notes"],
+    "size": "large",
+    "src": "documents/notes-on-attention.md",
+    "preview": "What you pay attention to is what you become."
+  }
+]
