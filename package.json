@@ -1,0 +1,25 @@
+{
+  "name": "hub-app",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "nodemon server/index.js",
+    "start": "node server/index.js",
+    "client": "npm start --prefix client",
+    "build": "npm run build --prefix client",
+    "heroku-postbuild": "npm install --include=dev --prefix client && npm run build --prefix client",
+    "lint": "eslint server/ && npm run lint --prefix client",
+    "test": "npm run lint",
+    "install-all": "npm install && npm install --prefix client"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "nodemon": "^3.0.0"
+  }
+}
