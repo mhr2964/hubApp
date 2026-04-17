@@ -1,4 +1,11 @@
-import { useRef, useLayoutEffect, useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, rectSortingStrategy, useSortable, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import DocumentBlock from './blocks/DocumentBlock';
 import PhotoBlock from './blocks/PhotoBlock';
 import AudioBlock from './blocks/AudioBlock';
@@ -12,59 +19,22 @@ const TYPE_DEFAULT_SIZE = {
   link:     'small',
 };
 
-const SIZE_PX = {
-  small:  { w: 220, h: 180 },
-  medium: { w: 340, h: 260 },
-  large:  { w: 520, h: 340 },
+const SIZE_FLEX = {
+  small:  { basis: '200px', grow: 1, height: '180px' },
+  medium: { basis: '320px', grow: 2, height: '260px' },
+  large:  { basis: '500px', grow: 3, height: '340px' },
 };
 
-const GAP = 12;
-const SPEED = 0.25;
-
-function pack(blocks, cw) {
-  const result = [];
-  let x = GAP, y = GAP, rowH = 0;
-
-  for (const block of blocks) {
-    const size = block.size || TYPE_DEFAULT_SIZE[block.type] || 'medium';
-    const { w, h } = SIZE_PX[size];
-
-    if (x > GAP && x + w + GAP > cw) {
-      y += rowH + GAP;
-      x = GAP;
-      rowH = 0;
-    }
-
-    const speed = SPEED * (0.6 + Math.random() * 0.8);
-    result.push({
-      id: block.id,
-      block,
-      x, y, w, h,
-      vx: (Math.random() - 0.5) * 0.08,
-      vy: (Math.random() < 0.5 ? 1 : -1) * speed,
-    });
-
-    x += w + GAP;
-    rowH = Math.max(rowH, h);
-  }
-
-  return result;
-}
-
-function resolveCollision(a, b) {
-  const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
-  const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
-  if (ox <= 0 || oy <= 0) return;
-
-  if (ox < oy) {
-    const push = ox / 2 + 0.5;
-    if (a.x < b.x) { a.x -= push; b.x += push; } else { a.x += push; b.x -= push; }
-    [a.vx, b.vx] = [b.vx, a.vx];
-  } else {
-    const push = oy / 2 + 0.5;
-    if (a.y < b.y) { a.y -= push; b.y += push; } else { a.y += push; b.y -= push; }
-    [a.vy, b.vy] = [b.vy, a.vy];
-  }
+// Stable pseudo-random float params derived from block id so they don't re-randomize on render
+function floatParams(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
+  h = Math.abs(h);
+  return {
+    duration: `${3.5 + (h % 35) / 10}s`,
+    delay:    `-${(h % 30) / 10}s`,
+    amplitude: `${7 + (h % 7)}px`,
+  };
 }
 
 function BlockComponent({ block }) {
@@ -77,74 +47,69 @@ function BlockComponent({ block }) {
   }
 }
 
-export default function BlockGrid({ blocks }) {
-  const containerRef = useRef(null);
-  const domRefs = useRef({});
-  const physics = useRef([]);
-  const [items, setItems] = useState([]);
+function SortableBlock({ block }) {
+  const size = block.size || TYPE_DEFAULT_SIZE[block.type] || 'medium';
+  const { basis, grow, height } = SIZE_FLEX[size];
+  const { duration, delay, amplitude } = floatParams(block.id);
 
-  useLayoutEffect(() => {
-    if (!containerRef.current || blocks.length === 0) return;
-    const cw = containerRef.current.clientWidth;
-    physics.current = pack(blocks, cw);
-    setItems([...physics.current]);
-  }, [blocks]);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
-  useEffect(() => {
-    if (items.length === 0) return;
-    let rafId;
-    const MAX_V = SPEED * 4;
+  return (
+    <div
+      ref={setNodeRef}
+      className="block-item"
+      style={{
+        flexBasis: basis,
+        flexGrow: grow,
+        height,
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 999 : 1,
+      }}
+      {...attributes}
+      {...listeners}
+    >
+      <div
+        className="block-float"
+        style={{
+          '--float-dur': duration,
+          '--float-delay': delay,
+          '--float-amp': amplitude,
+          animationPlayState: isDragging ? 'paused' : 'running',
+        }}
+      >
+        <BlockComponent block={block} />
+      </div>
+    </div>
+  );
+}
 
-    const tick = () => {
-      const state = physics.current;
-      const el = containerRef.current;
-      if (!el) return;
-      const cw = el.clientWidth;
-      const ch = el.clientHeight;
+export default function BlockGrid({ blocks: propBlocks }) {
+  const [blocks, setBlocks] = useState(propBlocks);
+  useEffect(() => setBlocks(propBlocks), [propBlocks]);
 
-      for (const item of state) {
-        item.x += item.vx;
-        item.y += item.vy;
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
-        if (item.x < 0)           { item.x = 0;          item.vx =  Math.abs(item.vx); }
-        if (item.x + item.w > cw) { item.x = cw - item.w; item.vx = -Math.abs(item.vx); }
-        if (item.y < 0)           { item.y = 0;          item.vy =  Math.abs(item.vy); }
-        if (item.y + item.h > ch) { item.y = ch - item.h; item.vy = -Math.abs(item.vy); }
-
-        if (Math.abs(item.vx) > MAX_V) item.vx = Math.sign(item.vx) * MAX_V;
-        if (Math.abs(item.vy) > MAX_V) item.vy = Math.sign(item.vy) * MAX_V;
-
-        const domEl = domRefs.current[item.id];
-        if (domEl) domEl.style.transform = `translate(${item.x}px, ${item.y}px)`;
-      }
-
-      for (let i = 0; i < state.length; i++) {
-        for (let j = i + 1; j < state.length; j++) {
-          resolveCollision(state[i], state[j]);
-        }
-      }
-
-      rafId = requestAnimationFrame(tick);
-    };
-
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [items]);
+  const handleDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    const oldIdx = blocks.findIndex(b => b.id === active.id);
+    const newIdx = blocks.findIndex(b => b.id === over.id);
+    setBlocks(prev => arrayMove(prev, oldIdx, newIdx));
+  };
 
   if (blocks.length === 0) return <p className="empty-state">nothing here yet.</p>;
 
   return (
-    <div ref={containerRef} className="block-grid">
-      {items.map(item => (
-        <div
-          key={item.id}
-          ref={el => { if (el) domRefs.current[item.id] = el; }}
-          className="block-item"
-          style={{ width: item.w, height: item.h, transform: `translate(${item.x}px, ${item.y}px)` }}
-        >
-          <BlockComponent block={item.block} />
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={blocks.map(b => b.id)} strategy={rectSortingStrategy}>
+        <div className="block-grid">
+          {blocks.map(block => (
+            <SortableBlock key={block.id} block={block} />
+          ))}
         </div>
-      ))}
-    </div>
+      </SortableContext>
+    </DndContext>
   );
 }

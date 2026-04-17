@@ -1,12 +1,27 @@
 .block-grid {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-content: flex-start;
+  padding-bottom: 32px;
 }
 
 .block-item {
-  position: absolute;
-  top: 0;
-  left: 0;
+  min-width: 0;
+  cursor: grab;
+}
+
+.block-item:active {
+  cursor: grabbing;
+}
+
+.block-float {
+  width: 100%;
+  height: 100%;
+  animation: block-float var(--float-dur, 4s) ease-in-out var(--float-delay, 0s) infinite both;
+}
+
+@keyframes block-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(calc(-1 * var(--float-amp, 8px))); }
 }
