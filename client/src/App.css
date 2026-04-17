@@ -44,23 +44,7 @@ body {
 
 .app-main {
   flex: 1;
-  overflow-y: auto;
-  padding-top: 16px;
-  scrollbar-width: thin;
-  scrollbar-color: #2a2a2a transparent;
-}
-
-.app-main::-webkit-scrollbar {
-  width: 6px;
-}
-
-.app-main::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.app-main::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
-  border-radius: 3px;
+  overflow: hidden;
 }
 
 .status {
