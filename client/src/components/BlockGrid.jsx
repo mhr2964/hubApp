@@ -5,7 +5,6 @@ import {
 import {
   SortableContext, rectSortingStrategy, useSortable, arrayMove,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import DocumentBlock from './blocks/DocumentBlock';
 import PhotoBlock from './blocks/PhotoBlock';
 import AudioBlock from './blocks/AudioBlock';
