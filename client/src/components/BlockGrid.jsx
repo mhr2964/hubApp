@@ -12,19 +12,24 @@ import AudioBlock from './blocks/AudioBlock';
 import LinkBlock from './blocks/LinkBlock';
 import './BlockGrid.css';
 
-const TYPE_DEFAULT_SIZE = {
-  document: 'medium',
-  photo:    'medium',
-  audio:    'small',
-  link:     'small',
+// All rows are 260px tall. Column spans are multiples of 3 so any
+// combination summing to 12 fills a row with zero dead space:
+//   3+3+3+3, 6+3+3, 6+6, 9+3, 3+3+6, etc.
+const SPAN = {
+  link:     { small: 3, medium: 3, large: 3 },
+  audio:    { small: 3, medium: 6, large: 6 },
+  photo:    { small: 3, medium: 6, large: 9 },
+  document: { small: 6, medium: 6, large: 9 },
 };
 
-// Grid is 12 columns. Spans determine proportional widths — no stretching.
-const SIZE_GRID = {
-  small:  { span: 3, height: '200px' },
-  medium: { span: 4, height: '280px' },
-  large:  { span: 6, height: '360px' },
+const DEFAULT_SIZE = {
+  link: 'small', audio: 'small', photo: 'medium', document: 'medium',
 };
+
+function getSpan(block) {
+  const size = block.size || DEFAULT_SIZE[block.type] || 'medium';
+  return (SPAN[block.type] || {})[size] || 3;
+}
 
 // Stable pseudo-random float params per block id
 function floatParams(id) {
@@ -32,9 +37,9 @@ function floatParams(id) {
   for (let i = 0; i < id.length; i++) h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
   h = Math.abs(h);
   return {
-    duration:  `${7 + (h % 60) / 10}s`,
-    delay:     `-${(h % 60) / 10}s`,
-    amplitude: `${4 + (h % 3)}px`,
+    duration: `${7 + (h % 60) / 10}s`,
+    delay:    `-${(h % 60) / 10}s`,
+    amplitude:`${4 + (h % 3)}px`,
   };
 }
 
@@ -49,10 +54,8 @@ function BlockComponent({ block }) {
 }
 
 function SortableBlock({ block }) {
-  const size = block.size || TYPE_DEFAULT_SIZE[block.type] || 'medium';
-  const { span, height } = SIZE_GRID[size];
+  const span = getSpan(block);
   const { duration, delay, amplitude } = floatParams(block.id);
-
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
   return (
@@ -61,7 +64,6 @@ function SortableBlock({ block }) {
       className="block-item"
       style={{
         gridColumn: `span ${span}`,
-        height,
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0 : 1,
@@ -85,12 +87,9 @@ function SortableBlock({ block }) {
 }
 
 function OverlayBlock({ block }) {
-  const size = block.size || TYPE_DEFAULT_SIZE[block.type] || 'medium';
-  const { span, height } = SIZE_GRID[size];
-  // Approximate pixel width for the overlay (grid not available outside DndContext portal)
-  const approxWidth = `${(span / 12) * 100}%`;
+  const span = getSpan(block);
   return (
-    <div className="block-overlay" style={{ height, width: approxWidth }}>
+    <div className="block-overlay" style={{ gridColumn: `span ${span}` }}>
       <BlockComponent block={block} />
     </div>
   );
