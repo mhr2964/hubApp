@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
@@ -48,8 +48,6 @@ function BlockComponent({ block }) {
   }
 }
 
-// No transform applied — layout is committed live via displayBlocks so the
-// grid is always valid. The active block is just an invisible placeholder.
 function SortableBlock({ block, isActive }) {
   const span = getSpan(block);
   const { duration, delay, amplitude } = floatParams(block.id);
@@ -59,10 +57,7 @@ function SortableBlock({ block, isActive }) {
     <div
       ref={setNodeRef}
       className="block-item"
-      style={{
-        gridColumn: `span ${span}`,
-        opacity: isActive ? 0 : 1,
-      }}
+      style={{ gridColumn: `span ${span}`, opacity: isActive ? 0 : 1 }}
       {...attributes}
       {...listeners}
     >
@@ -92,7 +87,7 @@ function OverlayBlock({ block }) {
 export default function BlockGrid({ blocks: propBlocks }) {
   const [blocks, setBlocks] = useState(propBlocks);
   const [activeId, setActiveId] = useState(null);
-  const [overId, setOverId] = useState(null);
+  const savedOrder = useRef(null);
 
   useEffect(() => setBlocks(propBlocks), [propBlocks]);
 
@@ -102,28 +97,26 @@ export default function BlockGrid({ blocks: propBlocks }) {
 
   const activeBlock = activeId ? blocks.find(b => b.id === activeId) : null;
 
-  // Re-order the array live as you drag so the CSS grid always renders a
-  // valid committed layout — no transforms, no overlap, no overflow.
-  const displayBlocks = useMemo(() => {
-    if (!activeId || !overId || activeId === overId) return blocks;
-    const oldIdx = blocks.findIndex(b => b.id === activeId);
-    const newIdx = blocks.findIndex(b => b.id === overId);
-    if (oldIdx === -1 || newIdx === -1) return blocks;
-    return arrayMove([...blocks], oldIdx, newIdx);
-  }, [blocks, activeId, overId]);
-
   const handleDragStart = ({ active }) => {
     setActiveId(active.id);
-    setOverId(active.id);
+    savedOrder.current = blocks; // snapshot in case of cancel
   };
 
-  const handleDragOver = ({ over }) => {
-    setOverId(over?.id ?? null);
+  // Commit each swap directly into state as you hover — stable base order
+  // means nothing to oscillate against, no flicker.
+  const handleDragOver = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    setBlocks(prev => {
+      const oldIdx = prev.findIndex(b => b.id === active.id);
+      const newIdx = prev.findIndex(b => b.id === over.id);
+      if (oldIdx === newIdx) return prev;
+      return arrayMove(prev, oldIdx, newIdx);
+    });
   };
 
-  const handleDragEnd = ({ active, over }) => {
+  const handleDragEnd = () => {
     setActiveId(null);
-    setOverId(null);
+    savedOrder.current = null;
 
     const suppressClick = (e) => {
       e.preventDefault();
@@ -131,16 +124,13 @@ export default function BlockGrid({ blocks: propBlocks }) {
       document.removeEventListener('click', suppressClick, true);
     };
     document.addEventListener('click', suppressClick, true);
-
-    if (!over || active.id === over.id) return;
-    const oldIdx = blocks.findIndex(b => b.id === active.id);
-    const newIdx = blocks.findIndex(b => b.id === over.id);
-    setBlocks(prev => arrayMove(prev, oldIdx, newIdx));
+    // blocks is already in final order — nothing else to do
   };
 
   const handleDragCancel = () => {
     setActiveId(null);
-    setOverId(null);
+    if (savedOrder.current) setBlocks(savedOrder.current);
+    savedOrder.current = null;
   };
 
   if (blocks.length === 0) return <p className="empty-state">nothing here yet.</p>;
@@ -154,9 +144,9 @@ export default function BlockGrid({ blocks: propBlocks }) {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <SortableContext items={displayBlocks.map(b => b.id)} strategy={rectSortingStrategy}>
+      <SortableContext items={blocks.map(b => b.id)} strategy={rectSortingStrategy}>
         <div className="block-grid">
-          {displayBlocks.map(block => (
+          {blocks.map(block => (
             <SortableBlock key={block.id} block={block} isActive={block.id === activeId} />
           ))}
         </div>
