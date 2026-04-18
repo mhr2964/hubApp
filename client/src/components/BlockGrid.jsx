@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
@@ -11,9 +11,6 @@ import AudioBlock from './blocks/AudioBlock';
 import LinkBlock from './blocks/LinkBlock';
 import './BlockGrid.css';
 
-// All rows are 260px tall. Column spans are multiples of 3 so any
-// combination summing to 12 fills a row with zero dead space:
-//   3+3+3+3, 6+3+3, 6+6, 9+3, 3+3+6, etc.
 const SPAN = {
   link:     { small: 3, medium: 3, large: 3 },
   audio:    { small: 3, medium: 6, large: 6 },
@@ -30,15 +27,14 @@ function getSpan(block) {
   return (SPAN[block.type] || {})[size] || 3;
 }
 
-// Stable pseudo-random float params per block id
 function floatParams(id) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
   h = Math.abs(h);
   return {
-    duration: `${7 + (h % 60) / 10}s`,
-    delay:    `-${(h % 60) / 10}s`,
-    amplitude:`${4 + (h % 3)}px`,
+    duration:  `${7 + (h % 60) / 10}s`,
+    delay:     `-${(h % 60) / 10}s`,
+    amplitude: `${4 + (h % 3)}px`,
   };
 }
 
@@ -52,10 +48,12 @@ function BlockComponent({ block }) {
   }
 }
 
-function SortableBlock({ block }) {
+// No transform applied — layout is committed live via displayBlocks so the
+// grid is always valid. The active block is just an invisible placeholder.
+function SortableBlock({ block, isActive }) {
   const span = getSpan(block);
   const { duration, delay, amplitude } = floatParams(block.id);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
+  const { attributes, listeners, setNodeRef } = useSortable({ id: block.id });
 
   return (
     <div
@@ -63,11 +61,7 @@ function SortableBlock({ block }) {
       className="block-item"
       style={{
         gridColumn: `span ${span}`,
-        transform: transform
-          ? `translate3d(${Math.round(transform.x)}px, ${Math.round(transform.y)}px, 0)`
-          : undefined,
-        transition,
-        opacity: isDragging ? 0 : 1,
+        opacity: isActive ? 0 : 1,
       }}
       {...attributes}
       {...listeners}
@@ -78,7 +72,7 @@ function SortableBlock({ block }) {
           '--float-dur':   duration,
           '--float-delay': delay,
           '--float-amp':   amplitude,
-          animationPlayState: isDragging ? 'paused' : 'running',
+          animationPlayState: isActive ? 'paused' : 'running',
         }}
       >
         <BlockComponent block={block} />
@@ -88,9 +82,8 @@ function SortableBlock({ block }) {
 }
 
 function OverlayBlock({ block }) {
-  const span = getSpan(block);
   return (
-    <div className="block-overlay" style={{ gridColumn: `span ${span}` }}>
+    <div className="block-overlay">
       <BlockComponent block={block} />
     </div>
   );
@@ -99,6 +92,7 @@ function OverlayBlock({ block }) {
 export default function BlockGrid({ blocks: propBlocks }) {
   const [blocks, setBlocks] = useState(propBlocks);
   const [activeId, setActiveId] = useState(null);
+  const [overId, setOverId] = useState(null);
 
   useEffect(() => setBlocks(propBlocks), [propBlocks]);
 
@@ -108,12 +102,29 @@ export default function BlockGrid({ blocks: propBlocks }) {
 
   const activeBlock = activeId ? blocks.find(b => b.id === activeId) : null;
 
-  const handleDragStart = ({ active }) => setActiveId(active.id);
+  // Re-order the array live as you drag so the CSS grid always renders a
+  // valid committed layout — no transforms, no overlap, no overflow.
+  const displayBlocks = useMemo(() => {
+    if (!activeId || !overId || activeId === overId) return blocks;
+    const oldIdx = blocks.findIndex(b => b.id === activeId);
+    const newIdx = blocks.findIndex(b => b.id === overId);
+    if (oldIdx === -1 || newIdx === -1) return blocks;
+    return arrayMove([...blocks], oldIdx, newIdx);
+  }, [blocks, activeId, overId]);
+
+  const handleDragStart = ({ active }) => {
+    setActiveId(active.id);
+    setOverId(active.id);
+  };
+
+  const handleDragOver = ({ over }) => {
+    setOverId(over?.id ?? null);
+  };
 
   const handleDragEnd = ({ active, over }) => {
     setActiveId(null);
+    setOverId(null);
 
-    // Suppress the browser click that fires on pointer-up after a drag
     const suppressClick = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -127,7 +138,10 @@ export default function BlockGrid({ blocks: propBlocks }) {
     setBlocks(prev => arrayMove(prev, oldIdx, newIdx));
   };
 
-  const handleDragCancel = () => setActiveId(null);
+  const handleDragCancel = () => {
+    setActiveId(null);
+    setOverId(null);
+  };
 
   if (blocks.length === 0) return <p className="empty-state">nothing here yet.</p>;
 
@@ -136,13 +150,14 @@ export default function BlockGrid({ blocks: propBlocks }) {
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <SortableContext items={blocks.map(b => b.id)} strategy={rectSortingStrategy}>
+      <SortableContext items={displayBlocks.map(b => b.id)} strategy={rectSortingStrategy}>
         <div className="block-grid">
-          {blocks.map(block => (
-            <SortableBlock key={block.id} block={block} />
+          {displayBlocks.map(block => (
+            <SortableBlock key={block.id} block={block} isActive={block.id === activeId} />
           ))}
         </div>
       </SortableContext>
