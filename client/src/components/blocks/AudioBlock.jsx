@@ -1,16 +1,30 @@
+import { resolveMediaSrc } from '../../utils/block';
 import './blocks.css';
 
+const SOUNDCLOUD_BASE = 'https://w.soundcloud.com/player/';
+
 function getSoundCloudEmbed(url) {
-  return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23aaaaaa&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false`;
+  const params = new URLSearchParams({
+    url,
+    color: '#aaaaaa',
+    auto_play: 'false',
+    hide_related: 'true',
+    show_comments: 'false',
+    show_user: 'false',
+    show_reposts: 'false',
+    show_teaser: 'false',
+  });
+  return `${SOUNDCLOUD_BASE}?${params}`;
 }
 
 export default function AudioBlock({ block }) {
   const isEmbed = block.src?.startsWith('http');
+  const albumArtSrc = resolveMediaSrc(block.album_art);
 
   return (
     <div
       className="block audio-block"
-      style={block.album_art ? { backgroundImage: `url(/api/content/${block.album_art})` } : {}}
+      style={albumArtSrc ? { backgroundImage: `url(${albumArtSrc})` } : {}}
     >
       <div className="audio-overlay">
         <div className="audio-meta">
@@ -20,13 +34,13 @@ export default function AudioBlock({ block }) {
         {isEmbed ? (
           <iframe
             className="audio-embed"
+            style={{ border: 'none' }}
             scrolling="no"
-            frameBorder="no"
             allow="autoplay"
             src={getSoundCloudEmbed(block.src)}
           />
         ) : (
-          <audio className="audio-player" controls src={`/api/content/${block.src}`} />
+          <audio className="audio-player" controls src={resolveMediaSrc(block.src)} />
         )}
       </div>
     </div>

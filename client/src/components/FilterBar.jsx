@@ -1,7 +1,7 @@
 import './FilterBar.css';
 
-const TYPES = ['document', 'photo', 'audio', 'link'];
-const SORTS = ['recent', 'oldest'];
+const BLOCK_TYPES = ['document', 'photo', 'audio', 'link'];
+const SORT_OPTIONS = ['recent', 'oldest'];
 
 export default function FilterBar({ filters, onChange }) {
   const toggleType = type => {
@@ -11,16 +11,17 @@ export default function FilterBar({ filters, onChange }) {
     onChange({ ...filters, types });
   };
 
-  const setSort = sort => {
+  const toggleSort = sort => {
     onChange({ ...filters, sort: filters.sort === sort ? null : sort });
   };
 
   return (
     <div className="filter-bar">
       <div className="filter-group">
-        {TYPES.map(type => (
+        {BLOCK_TYPES.map(type => (
           <button
             key={type}
+            type="button"
             className={`filter-btn${filters.types.includes(type) ? ' active' : ''}`}
             onClick={() => toggleType(type)}
           >
@@ -29,11 +30,12 @@ export default function FilterBar({ filters, onChange }) {
         ))}
       </div>
       <div className="filter-group">
-        {SORTS.map(sort => (
+        {SORT_OPTIONS.map(sort => (
           <button
             key={sort}
+            type="button"
             className={`filter-btn${filters.sort === sort ? ' active' : ''}`}
-            onClick={() => setSort(sort)}
+            onClick={() => toggleSort(sort)}
           >
             {sort}
           </button>

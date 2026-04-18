@@ -71,9 +71,3 @@ body {
   padding: 80px 0;
 }
 
-/* Override react-grid-layout drag cursor */
-.react-grid-item.react-draggable-dragging {
-  cursor: grabbing;
-  z-index: 999;
-  opacity: 0.9;
-}
