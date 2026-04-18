@@ -1,8 +1,8 @@
 export const SPAN = {
   link:     { small: 3, medium: 3, large: 3 },
   audio:    { small: 3, medium: 6, large: 6 },
-  photo:    { small: 3, medium: 6, large: 9 },
-  document: { small: 6, medium: 6, large: 9 },
+  photo:    { small: 3, medium: 6, large: 6 },
+  document: { small: 6, medium: 6, large: 6 },
 };
 
 const DEFAULT_SIZE = {
