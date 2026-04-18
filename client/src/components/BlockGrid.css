@@ -2,6 +2,7 @@
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   grid-auto-rows: 300px;
+  grid-auto-flow: row dense;
   gap: 12px;
   align-content: start;
   padding-bottom: 32px;
