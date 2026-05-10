@@ -1,20 +1,3 @@
-export const SPAN = {
-  link:     { small: 3, medium: 3, large: 3 },
-  audio:    { small: 3, medium: 6, large: 6 },
-  photo:    { small: 3, medium: 6, large: 6 },
-  document: { small: 6, medium: 6, large: 6 },
-  project:  { small: 3, medium: 6, large: 6 },
-};
-
-const DEFAULT_SIZE = {
-  link: 'small', audio: 'small', photo: 'medium', document: 'medium', project: 'medium',
-};
-
-export function getSpan(block) {
-  const size = block.size || DEFAULT_SIZE[block.type] || 'medium';
-  return (SPAN[block.type] || {})[size] || 3;
-}
-
 export function floatParams(id) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;

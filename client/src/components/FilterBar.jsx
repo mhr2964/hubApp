@@ -1,6 +1,8 @@
+import { BLOCK_REGISTRY } from '../blockRegistry';
 import './FilterBar.css';
 
-const BLOCK_TYPES = ['document', 'photo', 'audio', 'link', 'project'];
+// Order follows BLOCK_REGISTRY insertion order — do not edit directly
+const BLOCK_TYPES = Object.keys(BLOCK_REGISTRY);
 const SORT_OPTIONS = ['recent', 'oldest'];
 
 export default function FilterBar({ filters, onChange }) {

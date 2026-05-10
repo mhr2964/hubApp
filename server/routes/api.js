@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { marked } = require('marked');
+const { BLOCK_REGISTRY, DEFAULT_SEARCH_FIELDS } = require('../blockRegistry');
 
 const router = express.Router();
 
@@ -10,14 +11,13 @@ const CONTENT_DIR = path.join(__dirname, '../content');
 // Normalized with trailing sep so startsWith check is dir-boundary safe
 const CONTENT_DIR_PREFIX = CONTENT_DIR + path.sep;
 
-// Maps block type names to their JSON filenames
-const TYPE_FILES = {
-  document: 'documents',
-  photo:    'photos',
-  audio:    'audio',
-  link:     'links',
-  project:  'projects',
-};
+// Derived from BLOCK_REGISTRY — do not edit directly
+const TYPE_FILES = Object.fromEntries(
+  Object.entries(BLOCK_REGISTRY).map(([type, entry]) => [type, entry.filename]),
+);
+const SEARCH_FIELDS = Object.fromEntries(
+  Object.entries(BLOCK_REGISTRY).map(([type, entry]) => [type, entry.searchFields]),
+);
 
 // Load all block data once at startup and cache in memory.
 // The dataset is small and static; re-reading on every request is unnecessary
@@ -36,17 +36,6 @@ for (const [type, filename] of Object.entries(TYPE_FILES)) {
 function getByType(type) {
   return store[type] ?? [];
 }
-
-// Each block type exposes different text fields for search
-const SEARCH_FIELDS = {
-  document: b => [b.title, b.preview],
-  link:     b => [b.title, b.description],
-  photo:    b => [b.title, b.caption, ...(b.tags ?? [])],
-  audio:    b => [b.title, b.description, ...(b.tags ?? [])],
-  project:  b => [b.title, b.description, ...(b.stack ?? []), ...(b.tags ?? [])],
-};
-
-const DEFAULT_SEARCH_FIELDS = b => [b.title];
 
 function matchesSearch(block, query) {
   if (!query) return true;
