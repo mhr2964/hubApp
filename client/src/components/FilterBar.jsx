@@ -1,6 +1,6 @@
 import './FilterBar.css';
 
-const BLOCK_TYPES = ['document', 'photo', 'audio', 'link'];
+const BLOCK_TYPES = ['document', 'photo', 'audio', 'link', 'project'];
 const SORT_OPTIONS = ['recent', 'oldest'];
 
 export default function FilterBar({ filters, onChange }) {

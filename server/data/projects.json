@@ -1,0 +1,41 @@
+[
+  {
+    "id": "project-knowthew",
+    "type": "project",
+    "title": "knowthew",
+    "date": "2026-05-09",
+    "tags": ["wnba", "stats", "sports"],
+    "size": "medium",
+    "description": "WNBA stats explorer — player flashcards, percentile rankings, ESPN API-backed.",
+    "status": "active",
+    "stack": ["React", "Express", "MongoDB"],
+    "repo_url": "https://github.com/mhr2964/KnowTheW",
+    "live_url": "https://knowthew-536bebfc7101.herokuapp.com/"
+  },
+  {
+    "id": "project-rhymebook",
+    "type": "project",
+    "title": "rhymebook",
+    "date": "2026-05-10",
+    "tags": ["writing", "ai"],
+    "size": "medium",
+    "description": "Lyric capture app with AI-tagged metadata, vertical-slice architecture.",
+    "status": "active",
+    "stack": ["React", "Express", "Postgres"],
+    "repo_url": null,
+    "live_url": null
+  },
+  {
+    "id": "project-pinatapals",
+    "type": "project",
+    "title": "pinatapals",
+    "date": "2026-05-08",
+    "tags": ["game", "mobile"],
+    "size": "medium",
+    "description": "Companion-collecting browser game with NPC places, daily quests, and session-based auth.",
+    "status": "active",
+    "stack": ["React", "Express", "Postgres"],
+    "repo_url": "https://github.com/mhr2964/pinatapals",
+    "live_url": "https://pinatapals-01f7ca02256e.herokuapp.com/"
+  }
+]

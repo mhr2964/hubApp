@@ -11,6 +11,7 @@ import DocumentBlock from './blocks/DocumentBlock';
 import PhotoBlock from './blocks/PhotoBlock';
 import AudioBlock from './blocks/AudioBlock';
 import LinkBlock from './blocks/LinkBlock';
+import ProjectBlock from './blocks/ProjectBlock';
 import './BlockGrid.css';
 
 const BLOCK_COMPONENTS = {
@@ -18,6 +19,7 @@ const BLOCK_COMPONENTS = {
   photo:    PhotoBlock,
   audio:    AudioBlock,
   link:     LinkBlock,
+  project:  ProjectBlock,
 };
 
 const POINTER_SENSOR_OPTIONS = { activationConstraint: { distance: 8 } };

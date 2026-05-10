@@ -16,6 +16,7 @@ const TYPE_FILES = {
   photo:    'photos',
   audio:    'audio',
   link:     'links',
+  project:  'projects',
 };
 
 // Load all block data once at startup and cache in memory.
@@ -42,6 +43,7 @@ const SEARCH_FIELDS = {
   link:     b => [b.title, b.description],
   photo:    b => [b.title, b.caption, ...(b.tags ?? [])],
   audio:    b => [b.title, b.description, ...(b.tags ?? [])],
+  project:  b => [b.title, b.description, ...(b.stack ?? []), ...(b.tags ?? [])],
 };
 
 const DEFAULT_SEARCH_FIELDS = b => [b.title];

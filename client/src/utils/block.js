@@ -3,10 +3,11 @@ export const SPAN = {
   audio:    { small: 3, medium: 6, large: 6 },
   photo:    { small: 3, medium: 6, large: 6 },
   document: { small: 6, medium: 6, large: 6 },
+  project:  { small: 3, medium: 6, large: 6 },
 };
 
 const DEFAULT_SIZE = {
-  link: 'small', audio: 'small', photo: 'medium', document: 'medium',
+  link: 'small', audio: 'small', photo: 'medium', document: 'medium', project: 'medium',
 };
 
 export function getSpan(block) {

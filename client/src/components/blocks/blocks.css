@@ -163,3 +163,84 @@
   color: #666;
   line-height: 1.4;
 }
+
+/* Project */
+.project-block {
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.project-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.project-header .block-title {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.project-status {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.project-status-active  { background: #1a3a1a; color: #7fdb7f; }
+.project-status-paused  { background: #3a2a1a; color: #dbb47f; }
+.project-status-shipped { background: #1a2a3a; color: #7fb4db; }
+
+.project-description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #bbb;
+}
+
+.project-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.project-stack-tag {
+  font-size: 10px;
+  color: #888;
+  background: #1f1f1f;
+  border: 1px solid #2a2a2a;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.project-links {
+  display: flex;
+  gap: 8px;
+}
+
+.project-link-btn {
+  font-size: 11px;
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  color: #aaa;
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 14px;
+  padding: 4px 12px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.project-link-btn:hover {
+  color: #fff;
+  border-color: #666;
+}
