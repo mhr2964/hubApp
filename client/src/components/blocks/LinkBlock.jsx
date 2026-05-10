@@ -7,7 +7,7 @@ export default function LinkBlock({ block }) {
       target="_blank"
       rel="noopener noreferrer"
       className="block link-block"
-      onPointerDown={e => e.stopPropagation()}
+      draggable="false"
     >
       {block.og_image && <img src={block.og_image} className="link-og-image" alt="" />}
       <div className="link-content">
