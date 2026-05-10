@@ -7,8 +7,9 @@ export default defineConfig({
     outDir: 'build'
   },
   server: {
+    port: 3053,
     proxy: {
-      '/api': 'http://localhost:5000'
+      '/api': 'http://localhost:5053'
     }
   }
 });
