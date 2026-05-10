@@ -5,25 +5,18 @@ import {
 import {
   SortableContext, rectSortingStrategy, useSortable, arrayMove,
 } from '@dnd-kit/sortable';
+import { useAutoPromote } from '../hooks/useAutoPromote';
 import { CSS } from '@dnd-kit/utilities';
-import { getSpan, floatParams } from '../utils/block';
-import DocumentBlock from './blocks/DocumentBlock';
-import PhotoBlock from './blocks/PhotoBlock';
-import AudioBlock from './blocks/AudioBlock';
-import LinkBlock from './blocks/LinkBlock';
-import ProjectBlock from './blocks/ProjectBlock';
+import { floatParams } from '../utils/block';
+import { BLOCK_REGISTRY, getSpan } from '../blockRegistry';
 import './BlockGrid.css';
 
-const BLOCK_COMPONENTS = {
-  document: DocumentBlock,
-  photo:    PhotoBlock,
-  audio:    AudioBlock,
-  link:     LinkBlock,
-  project:  ProjectBlock,
-};
+// Derived from BLOCK_REGISTRY — do not edit directly
+const BLOCK_COMPONENTS = Object.fromEntries(
+  Object.entries(BLOCK_REGISTRY).map(([type, entry]) => [type, entry.component]),
+);
 
 const POINTER_SENSOR_OPTIONS = { activationConstraint: { distance: 8 } };
-const AUTO_PROMOTE_INTERVAL = 8000;
 const FLIP_DURATION = 400;
 
 function BlockComponent({ block }) {
@@ -82,6 +75,8 @@ export default function BlockGrid({ blocks: propBlocks }) {
   const flipPrev = useRef({});
   const flipInProgress = useRef(false);
   const activeIdRef = useRef(null);
+  // Tracks the current one-shot click suppressor so repeated drags don't pile up listeners
+  const suppressClickRef = useRef(null);
 
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
   useEffect(() => setBlocks(propBlocks), [propBlocks]);
@@ -134,15 +129,12 @@ export default function BlockGrid({ blocks: propBlocks }) {
     flipPrev.current = {};
   }, [blocks]);
 
-  // Periodically promote the last block to position 0.
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (activeIdRef.current || flipInProgress.current) return;
-      captureForFlip();
-      setBlocks(prev => prev.length < 2 ? prev : arrayMove(prev, prev.length - 1, 0));
-    }, AUTO_PROMOTE_INTERVAL);
-    return () => clearInterval(interval);
-  }, [captureForFlip]);
+  const isAutoPromotePaused = useCallback(
+    () => !!(activeIdRef.current || flipInProgress.current),
+    [],
+  );
+
+  useAutoPromote(setBlocks, { isPaused: isAutoPromotePaused, captureForFlip });
 
   const handleDragStart = useCallback(({ active }) => {
     setActiveId(active.id);
@@ -162,11 +154,18 @@ export default function BlockGrid({ blocks: propBlocks }) {
     setActiveId(null);
     savedOrder.current = null;
 
+    // Clear any previously-registered suppressor before adding a new one,
+    // so repeated drags don't accumulate listeners on document.
+    if (suppressClickRef.current) {
+      document.removeEventListener('click', suppressClickRef.current, true);
+    }
     const suppressClick = (e) => {
       e.preventDefault();
       e.stopPropagation();
       document.removeEventListener('click', suppressClick, true);
+      suppressClickRef.current = null;
     };
+    suppressClickRef.current = suppressClick;
     document.addEventListener('click', suppressClick, true);
   }, []);
 
