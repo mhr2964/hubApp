@@ -5,8 +5,8 @@ import {
 import {
   SortableContext, rectSortingStrategy, useSortable, arrayMove,
 } from '@dnd-kit/sortable';
-import { useAutoPromote } from '../hooks/useAutoPromote';
 import { CSS } from '@dnd-kit/utilities';
+import { useAutoPromote } from '../hooks/useAutoPromote';
 import { floatParams } from '../utils/block';
 import { BLOCK_REGISTRY, getSpan } from '../blockRegistry';
 import './BlockGrid.css';
@@ -21,13 +21,21 @@ const FLIP_DURATION = 400;
 
 function BlockComponent({ block }) {
   const Component = BLOCK_COMPONENTS[block.type];
-  return Component ? <Component block={block} /> : null;
+  if (!Component) {
+    if (import.meta.env.DEV) {
+      console.warn(`No client component registered for block type "${block.type}". Did you add it to client/src/blockRegistry.js?`);
+    }
+    return null;
+  }
+  return <Component block={block} />;
 }
 
 function SortableBlock({ block, isActive, flipRefCallback }) {
   const span = getSpan(block);
   const { duration, delay, amplitude } = floatParams(block.id);
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: block.id });
+  // dnd-kit spreads role="button" via attributes. Override to "listitem" so screen readers
+  // don't announce a press action that doesn't exist (most cards aren't clickable).
 
   return (
     <div
@@ -40,6 +48,7 @@ function SortableBlock({ block, isActive, flipRefCallback }) {
         transition,
       }}
       {...attributes}
+      role="listitem"
       {...listeners}
     >
       <div
@@ -77,9 +86,20 @@ export default function BlockGrid({ blocks: propBlocks }) {
   const activeIdRef = useRef(null);
   // Tracks the current one-shot click suppressor so repeated drags don't pile up listeners
   const suppressClickRef = useRef(null);
+  // Timestamp of last mouse/scroll activity inside the grid — used to pause auto-promote
+  const lastActivityRef = useRef(0);
 
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
   useEffect(() => setBlocks(propBlocks), [propBlocks]);
+
+  // Cleanup: if BlockGrid unmounts while a one-shot suppress-click listener is
+  // still pending, remove it to avoid a stale closure capturing document clicks.
+  useEffect(() => () => {
+    if (suppressClickRef.current) {
+      document.removeEventListener('click', suppressClickRef.current, true);
+      suppressClickRef.current = null;
+    }
+  }, []);
 
   const sensors = useSensors(useSensor(PointerSensor, POINTER_SENSOR_OPTIONS));
   const activeBlock = activeId ? blocks.find(b => b.id === activeId) : null;
@@ -130,7 +150,7 @@ export default function BlockGrid({ blocks: propBlocks }) {
   }, [blocks]);
 
   const isAutoPromotePaused = useCallback(
-    () => !!(activeIdRef.current || flipInProgress.current),
+    () => !!(activeIdRef.current || flipInProgress.current || Date.now() - lastActivityRef.current < 3000),
     [],
   );
 
@@ -163,7 +183,9 @@ export default function BlockGrid({ blocks: propBlocks }) {
       e.preventDefault();
       e.stopPropagation();
       document.removeEventListener('click', suppressClick, true);
-      suppressClickRef.current = null;
+      // Only clear the ref if it still points to this handler — a rapid second
+      // drag may have already replaced it with a newer suppressor.
+      if (suppressClickRef.current === suppressClick) suppressClickRef.current = null;
     };
     suppressClickRef.current = suppressClick;
     document.addEventListener('click', suppressClick, true);
@@ -174,6 +196,20 @@ export default function BlockGrid({ blocks: propBlocks }) {
     if (savedOrder.current) setBlocks(savedOrder.current);
     savedOrder.current = null;
   }, []);
+
+  // If the tab loses focus mid-drag, the pointerup never fires and activeId gets stuck,
+  // permanently pausing auto-promote. Cancel the drag defensively on visibility/blur.
+  useEffect(() => {
+    const cancelIfDragging = () => {
+      if (activeIdRef.current) handleDragCancel();
+    };
+    document.addEventListener('visibilitychange', cancelIfDragging);
+    window.addEventListener('blur', cancelIfDragging);
+    return () => {
+      document.removeEventListener('visibilitychange', cancelIfDragging);
+      window.removeEventListener('blur', cancelIfDragging);
+    };
+  }, [handleDragCancel]);
 
   if (blocks.length === 0) return <p className="empty-state">nothing here yet.</p>;
 
@@ -187,7 +223,12 @@ export default function BlockGrid({ blocks: propBlocks }) {
       onDragCancel={handleDragCancel}
     >
       <SortableContext items={blocks.map(b => b.id)} strategy={rectSortingStrategy}>
-        <div className="block-grid">
+        <div
+          className="block-grid"
+          role="region"
+          aria-label="sortable card gallery"
+          onMouseMove={() => { lastActivityRef.current = Date.now(); }}
+        >
           {blocks.map(block => (
             <SortableBlock
               key={block.id}

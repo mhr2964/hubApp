@@ -43,13 +43,25 @@ export default function FilterBar({ filters, onChange }) {
           </button>
         ))}
       </div>
-      <input
-        className="search-input"
-        type="text"
-        placeholder="search..."
-        value={filters.search}
-        onChange={e => onChange({ ...filters, search: e.target.value })}
-      />
+      <div className="search-wrapper">
+        <input
+          className="search-input"
+          type="text"
+          placeholder="search..."
+          value={filters.search}
+          onChange={e => onChange({ ...filters, search: e.target.value })}
+        />
+        {filters.search && (
+          <button
+            type="button"
+            className="search-clear"
+            aria-label="Clear search"
+            onClick={() => onChange({ ...filters, search: '' })}
+          >
+            ×
+          </button>
+        )}
+      </div>
     </div>
   );
 }
