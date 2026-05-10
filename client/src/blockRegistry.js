@@ -1,5 +1,7 @@
 // Central registry for all block types on the client side.
-// Add a new type here; BlockGrid and FilterBar derive from this.
+// Add a new type here AND in server/blockRegistry.js AND in block-types.json.
+// The assertion at the bottom catches any of the three drifting.
+import SHARED_TYPES from '../../block-types.json';
 import DocumentBlock from './components/blocks/DocumentBlock';
 import PhotoBlock from './components/blocks/PhotoBlock';
 import AudioBlock from './components/blocks/AudioBlock';
@@ -48,4 +50,14 @@ const DEFAULT_SIZE = Object.fromEntries(
 export function getSpan(block) {
   const size = block.size || DEFAULT_SIZE[block.type] || 'medium';
   return (SPAN[block.type] || {})[size] || 3;
+}
+
+const registered = Object.keys(BLOCK_REGISTRY);
+if (
+  registered.length !== SHARED_TYPES.length ||
+  registered.some((t, i) => t !== SHARED_TYPES[i])
+) {
+  throw new Error(
+    `Client block registry drift: registered=[${registered.join(',')}] but block-types.json=[${SHARED_TYPES.join(',')}]`,
+  );
 }

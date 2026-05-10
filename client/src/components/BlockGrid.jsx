@@ -1,9 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import {
-  DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors,
+  DndContext, DragOverlay, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import {
-  SortableContext, rectSortingStrategy, useSortable, arrayMove,
+  SortableContext, rectSortingStrategy, sortableKeyboardCoordinates, useSortable, arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useAutoPromote } from '../hooks/useAutoPromote';
@@ -36,6 +36,7 @@ function SortableBlock({ block, isActive, flipRefCallback }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: block.id });
   // dnd-kit spreads role="button" via attributes. Override to "listitem" so screen readers
   // don't announce a press action that doesn't exist (most cards aren't clickable).
+  // Keyboard drag still works — KeyboardSensor listens via tabIndex, not via role.
 
   return (
     <div
@@ -101,7 +102,10 @@ export default function BlockGrid({ blocks: propBlocks }) {
     }
   }, []);
 
-  const sensors = useSensors(useSensor(PointerSensor, POINTER_SENSOR_OPTIONS));
+  const sensors = useSensors(
+    useSensor(PointerSensor, POINTER_SENSOR_OPTIONS),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
   const activeBlock = activeId ? blocks.find(b => b.id === activeId) : null;
 
   const flipRefCallback = useCallback((id, el) => {
