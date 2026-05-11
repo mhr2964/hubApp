@@ -11,6 +11,10 @@ const LINK_ALLOWED_FIELDS = new Set([
   'title', 'url', 'description', 'og_image', 'favicon', 'tags', 'size', 'date',
 ]);
 
+const DOCUMENT_ALLOWED_FIELDS = new Set([
+  'title', 'body', 'preview', 'tags', 'size', 'date',
+]);
+
 const PROJECT_ALLOWED_FIELDS = new Set([
   'title', 'description', 'status', 'stack', 'tags', 'size', 'date', 'repo_url', 'live_url',
 ]);
@@ -138,4 +142,51 @@ function validateProject(body) {
   return { valid: errors.length === 0, errors };
 }
 
-module.exports = { validateLink, validateProject };
+/**
+ * Validate the body of a POST/PUT document request.
+ *
+ * @param {object} body - Raw request body
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+function validateDocument(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { valid: false, errors: ['Request body must be a JSON object'] };
+  }
+
+  const errors = [];
+
+  // Reject unknown fields to keep the data clean.
+  for (const key of Object.keys(body)) {
+    if (!DOCUMENT_ALLOWED_FIELDS.has(key)) {
+      errors.push(`Unknown field: ${key}`);
+    }
+  }
+
+  // Required fields.
+  if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
+    errors.push('title is required and must be a non-empty string');
+  }
+  if (!body.body || typeof body.body !== 'string' || body.body.trim() === '') {
+    errors.push('body is required and must be a non-empty string');
+  }
+
+  // Optional fields — only validate when present.
+  if (body.preview !== undefined && typeof body.preview !== 'string') {
+    errors.push('preview must be a string');
+  }
+  if (body.tags !== undefined) {
+    if (!Array.isArray(body.tags) || body.tags.some(t => typeof t !== 'string')) {
+      errors.push('tags must be an array of strings');
+    }
+  }
+  if (body.size !== undefined && !VALID_SIZES.includes(body.size)) {
+    errors.push(`size must be one of: ${VALID_SIZES.join(', ')}`);
+  }
+  if (body.date !== undefined && !DATE_RE.test(body.date)) {
+    errors.push('date must be in YYYY-MM-DD format');
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+module.exports = { validateLink, validateProject, validateDocument };

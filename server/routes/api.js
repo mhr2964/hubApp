@@ -9,7 +9,7 @@ const ogs = require('open-graph-scraper');
 const { BLOCK_REGISTRY, DEFAULT_SEARCH_FIELDS } = require('../blockRegistry');
 const store = require('../store');
 const { requireAuth } = require('../middleware/auth');
-const { validateLink, validateProject } = require('../validators/blocks');
+const { validateLink, validateProject, validateDocument } = require('../validators/blocks');
 
 const router = express.Router();
 
@@ -45,20 +45,30 @@ router.get('/document/:id', async (req, res) => {
   try {
     const doc = await store.getById(req.params.id);
     if (!doc || doc.type !== 'document') return res.status(404).json({ error: 'Not found' });
-    if (!doc.src) return res.status(404).json({ error: 'No content file for this document' });
 
-    const filePath = path.join(CONTENT_DIR, doc.src);
-    if (!filePath.startsWith(CONTENT_DIR_PREFIX)) {
-      return res.status(400).json({ error: 'Invalid document path' });
+    let raw;
+
+    if (doc.body) {
+      // Primary path: markdown was inlined into data.body by migration 0003.
+      raw = doc.body;
+    } else if (doc.src) {
+      // Fallback: legacy file-based document (pre-migration row or missed row).
+      // Path-traversal guard: resolved path must stay inside CONTENT_DIR.
+      const filePath = path.join(CONTENT_DIR, doc.src);
+      if (!filePath.startsWith(CONTENT_DIR_PREFIX)) {
+        return res.status(400).json({ error: 'Invalid document path' });
+      }
+      try {
+        raw = fs.readFileSync(filePath, 'utf8');
+      } catch (err) {
+        console.error(`Failed to read document ${doc.id} from disk:`, err.message);
+        return res.status(500).json({ error: 'Could not read document content' });
+      }
+    } else {
+      return res.status(404).json({ error: 'No content for this document' });
     }
 
-    try {
-      const raw = fs.readFileSync(filePath, 'utf8');
-      res.json({ ...doc, body: sanitizeHtml(marked(raw)) });
-    } catch (err) {
-      console.error(`Failed to read document ${doc.id}:`, err.message);
-      res.status(500).json({ error: 'Could not read document content' });
-    }
+    res.json({ ...doc, body: sanitizeHtml(marked(raw)) });
   } catch (err) {
     console.error('GET /document/:id db error:', err.message);
     res.status(500).json({ error: 'Database error' });
@@ -432,6 +442,74 @@ router.delete('/project/:id', requireAuth, async (req, res) => {
     return res.sendStatus(204);
   } catch (err) {
     console.error(`DELETE /project/${req.params.id} db error:`, err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Document routes
+// ---------------------------------------------------------------------------
+
+// POST /api/blocks/document — create a new document block
+router.post('/document', requireAuth, async (req, res) => {
+  const { valid, errors } = validateDocument(req.body);
+  if (!valid) return res.status(400).json({ errors });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const block = {
+    id: `doc-${nanoid(8)}`,
+    type: 'document',
+    title: req.body.title.trim(),
+    body: req.body.body,
+    preview: req.body.preview ?? undefined,
+    tags: req.body.tags ?? [],
+    size: req.body.size ?? 'medium',
+    date: req.body.date ?? today,
+  };
+
+  try {
+    const created = await store.create(block);
+    return res.status(201).json(created);
+  } catch (err) {
+    console.error('POST /document db error:', err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// PUT /api/blocks/document/:id — full replace
+router.put('/document/:id', requireAuth, async (req, res) => {
+  const { valid, errors } = validateDocument(req.body);
+  if (!valid) return res.status(400).json({ errors });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const block = {
+    type: 'document',
+    title: req.body.title.trim(),
+    body: req.body.body,
+    preview: req.body.preview ?? undefined,
+    tags: req.body.tags ?? [],
+    size: req.body.size ?? 'medium',
+    date: req.body.date ?? today,
+  };
+
+  try {
+    const updated = await store.update(req.params.id, block);
+    if (!updated) return res.status(404).json({ error: 'Not found' });
+    return res.json(updated);
+  } catch (err) {
+    console.error(`PUT /document/${req.params.id} db error:`, err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// DELETE /api/blocks/document/:id — remove
+router.delete('/document/:id', requireAuth, async (req, res) => {
+  try {
+    const existed = await store.remove(req.params.id);
+    if (!existed) return res.status(404).json({ error: 'Not found' });
+    return res.sendStatus(204);
+  } catch (err) {
+    console.error(`DELETE /document/${req.params.id} db error:`, err.message);
     return res.status(500).json({ error: 'Database error' });
   }
 });
