@@ -4,12 +4,13 @@ const net = require('net');
 const path = require('path');
 const { marked } = require('marked');
 const sanitizeHtml = require('sanitize-html');
+const multer = require('multer');
 const { nanoid } = require('nanoid');
 const ogs = require('open-graph-scraper');
 const { BLOCK_REGISTRY, DEFAULT_SEARCH_FIELDS } = require('../blockRegistry');
 const store = require('../store');
 const { requireAuth } = require('../middleware/auth');
-const { validateLink, validateProject, validateDocument } = require('../validators/blocks');
+const { validateLink, validateProject, validateDocument, validatePhoto, validateAudio } = require('../validators/blocks');
 
 const router = express.Router();
 
@@ -510,6 +511,345 @@ router.delete('/document/:id', requireAuth, async (req, res) => {
     return res.sendStatus(204);
   } catch (err) {
     console.error(`DELETE /document/${req.params.id} db error:`, err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Photo routes
+// ---------------------------------------------------------------------------
+
+const PHOTO_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const AUDIO_MIME_TYPES = new Set(['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/x-m4a']);
+
+// Multer instances — memory storage only, never touches disk.
+const photoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter(_req, file, cb) {
+    if (PHOTO_MIME_TYPES.has(file.mimetype)) return cb(null, true);
+    cb(Object.assign(new Error('File type not allowed'), { status: 400 }));
+  },
+});
+
+const audioUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB
+  fileFilter(_req, file, cb) {
+    if (AUDIO_MIME_TYPES.has(file.mimetype)) return cb(null, true);
+    cb(Object.assign(new Error('File type not allowed'), { status: 400 }));
+  },
+});
+
+/**
+ * Wrap a multer middleware so that multer errors surface as 400/413 responses
+ * rather than unhandled exceptions. Express doesn't catch sync/multer errors
+ * thrown inside middleware chains automatically.
+ *
+ * @param {import('multer').Multer} uploadMiddleware
+ * @returns {import('express').RequestHandler}
+ */
+function runUpload(uploadMiddleware) {
+  const single = uploadMiddleware.single('file');
+  return (req, res, next) => {
+    single(req, res, (err) => {
+      if (!err) return next();
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File too large' });
+      }
+      // fileFilter errors carry a .status we set above, or default to 400.
+      const status = err.status || 400;
+      return res.status(status).json({ error: err.message || 'Upload error' });
+    });
+  };
+}
+
+/**
+ * Parse the `tags` field from a multipart body.
+ * Accepts a JSON-encoded array string (preferred) or comma-separated string.
+ * Returns an array of strings, or undefined if the field was absent.
+ *
+ * @param {string|undefined} raw
+ * @returns {string[]|undefined}
+ */
+function parseTags(raw) {
+  if (raw === undefined || raw === null) return undefined;
+  if (Array.isArray(raw)) return raw.map(String);
+  const s = String(raw).trim();
+  if (!s) return [];
+  if (s.startsWith('[')) {
+    try { return JSON.parse(s); } catch { /* fall through to CSV */ }
+  }
+  return s.split(',').map(t => t.trim()).filter(Boolean);
+}
+
+// POST /api/blocks/photo — create a new photo block with binary upload
+router.post('/photo', requireAuth, runUpload(photoUpload), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'file is required' });
+  }
+
+  // Normalise multipart text fields before validation.
+  const fields = {
+    title:   req.body.title,
+    caption: req.body.caption,
+    alt:     req.body.alt,
+    size:    req.body.size,
+    date:    req.body.date,
+    tags:    parseTags(req.body.tags),
+  };
+  // Drop keys that were not sent (undefined values confuse the unknown-field check).
+  for (const k of Object.keys(fields)) {
+    if (fields[k] === undefined) delete fields[k];
+  }
+
+  const { valid, errors } = validatePhoto(fields);
+  if (!valid) return res.status(400).json({ errors });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const blockId = `photo-${nanoid(8)}`;
+  const block = {
+    id:      blockId,
+    type:    'photo',
+    title:   fields.title.trim(),
+    caption: fields.caption ?? undefined,
+    alt:     fields.alt ?? undefined,
+    tags:    fields.tags ?? [],
+    size:    fields.size ?? 'medium',
+    date:    fields.date ?? today,
+    src:     `/api/content/${blockId}`,
+  };
+
+  let created;
+  try {
+    created = await store.create(block);
+  } catch (err) {
+    console.error('POST /photo block create db error:', err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+
+  try {
+    await store.putFile(blockId, req.file.mimetype, req.file.buffer);
+  } catch (err) {
+    console.error('POST /photo putFile error, rolling back block:', err.message);
+    // Best-effort cleanup — if this also fails the orphan will be visible but harmless.
+    // eslint-disable-next-line no-unused-vars
+    try { await store.remove(blockId); } catch (_e) { /* intentional — best effort */ }
+    return res.status(500).json({ error: 'Failed to save file' });
+  }
+
+  return res.status(201).json(created);
+});
+
+// PUT /api/blocks/photo/:id — full replace (file optional)
+router.put('/photo/:id', requireAuth, runUpload(photoUpload), async (req, res) => {
+  const fields = {
+    title:   req.body.title,
+    caption: req.body.caption,
+    alt:     req.body.alt,
+    size:    req.body.size,
+    date:    req.body.date,
+    tags:    parseTags(req.body.tags),
+  };
+  for (const k of Object.keys(fields)) {
+    if (fields[k] === undefined) delete fields[k];
+  }
+
+  const { valid, errors } = validatePhoto(fields);
+  if (!valid) return res.status(400).json({ errors });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { id } = req.params;
+  // Preserve existing src when no new file was uploaded — seed photos with
+  // external picsum URLs (or any non-uploaded src) would otherwise get clobbered.
+  let srcToUse;
+  if (req.file) {
+    srcToUse = `/api/content/${id}`;
+  } else {
+    const existing = await store.getById(id);
+    if (!existing) return res.status(404).json({ error: 'Not found' });
+    srcToUse = existing.src ?? null;
+  }
+  const block = {
+    type:    'photo',
+    title:   fields.title.trim(),
+    caption: fields.caption ?? undefined,
+    alt:     fields.alt ?? undefined,
+    tags:    fields.tags ?? [],
+    size:    fields.size ?? 'medium',
+    date:    fields.date ?? today,
+    src:     srcToUse,
+  };
+
+  let updated;
+  try {
+    updated = await store.update(id, block);
+    if (!updated) return res.status(404).json({ error: 'Not found' });
+  } catch (err) {
+    console.error(`PUT /photo/${id} db error:`, err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+
+  if (req.file) {
+    try {
+      await store.putFile(id, req.file.mimetype, req.file.buffer);
+    } catch (err) {
+      console.error(`PUT /photo/${id} putFile error:`, err.message);
+      return res.status(500).json({ error: 'Failed to save file' });
+    }
+  }
+
+  return res.json(updated);
+});
+
+// DELETE /api/blocks/photo/:id — remove (CASCADE cleans block_files)
+router.delete('/photo/:id', requireAuth, async (req, res) => {
+  try {
+    const existed = await store.remove(req.params.id);
+    if (!existed) return res.status(404).json({ error: 'Not found' });
+    return res.sendStatus(204);
+  } catch (err) {
+    console.error(`DELETE /photo/${req.params.id} db error:`, err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Audio routes
+// ---------------------------------------------------------------------------
+
+// POST /api/blocks/audio — create a new audio block with binary upload
+router.post('/audio', requireAuth, runUpload(audioUpload), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'file is required' });
+  }
+
+  const fields = {
+    title:       req.body.title,
+    description: req.body.description,
+    artist:      req.body.artist,
+    album:       req.body.album,
+    album_art:   req.body.album_art,
+    size:        req.body.size,
+    date:        req.body.date,
+    tags:        parseTags(req.body.tags),
+  };
+  for (const k of Object.keys(fields)) {
+    if (fields[k] === undefined) delete fields[k];
+  }
+
+  const { valid, errors } = validateAudio(fields);
+  if (!valid) return res.status(400).json({ errors });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const blockId = `audio-${nanoid(8)}`;
+  const block = {
+    id:          blockId,
+    type:        'audio',
+    title:       fields.title.trim(),
+    description: fields.description ?? undefined,
+    artist:      fields.artist ?? undefined,
+    album:       fields.album ?? undefined,
+    album_art:   fields.album_art ?? undefined,
+    tags:        fields.tags ?? [],
+    size:        fields.size ?? 'medium',
+    date:        fields.date ?? today,
+    src:         `/api/content/${blockId}`,
+  };
+
+  let created;
+  try {
+    created = await store.create(block);
+  } catch (err) {
+    console.error('POST /audio block create db error:', err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+
+  try {
+    await store.putFile(blockId, req.file.mimetype, req.file.buffer);
+  } catch (err) {
+    console.error('POST /audio putFile error, rolling back block:', err.message);
+    // eslint-disable-next-line no-unused-vars
+    try { await store.remove(blockId); } catch (_e) { /* intentional — best effort */ }
+    return res.status(500).json({ error: 'Failed to save file' });
+  }
+
+  return res.status(201).json(created);
+});
+
+// PUT /api/blocks/audio/:id — full replace (file optional)
+router.put('/audio/:id', requireAuth, runUpload(audioUpload), async (req, res) => {
+  const fields = {
+    title:       req.body.title,
+    description: req.body.description,
+    artist:      req.body.artist,
+    album:       req.body.album,
+    album_art:   req.body.album_art,
+    size:        req.body.size,
+    date:        req.body.date,
+    tags:        parseTags(req.body.tags),
+  };
+  for (const k of Object.keys(fields)) {
+    if (fields[k] === undefined) delete fields[k];
+  }
+
+  const { valid, errors } = validateAudio(fields);
+  if (!valid) return res.status(400).json({ errors });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { id } = req.params;
+  // If a new file was uploaded, point src at it. Otherwise preserve the existing
+  // src so seed audio (external album_art or null src) doesn't silently break on edit.
+  let srcToUse;
+  if (req.file) {
+    srcToUse = `/api/content/${id}`;
+  } else {
+    const existing = await store.getById(id);
+    if (!existing) return res.status(404).json({ error: 'Not found' });
+    srcToUse = existing.src ?? null;
+  }
+  const block = {
+    type:        'audio',
+    title:       fields.title.trim(),
+    description: fields.description ?? undefined,
+    artist:      fields.artist ?? undefined,
+    album:       fields.album ?? undefined,
+    album_art:   fields.album_art ?? undefined,
+    tags:        fields.tags ?? [],
+    size:        fields.size ?? 'medium',
+    date:        fields.date ?? today,
+    src:         srcToUse,
+  };
+
+  let updated;
+  try {
+    updated = await store.update(id, block);
+    if (!updated) return res.status(404).json({ error: 'Not found' });
+  } catch (err) {
+    console.error(`PUT /audio/${id} db error:`, err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+
+  if (req.file) {
+    try {
+      await store.putFile(id, req.file.mimetype, req.file.buffer);
+    } catch (err) {
+      console.error(`PUT /audio/${id} putFile error:`, err.message);
+      return res.status(500).json({ error: 'Failed to save file' });
+    }
+  }
+
+  return res.json(updated);
+});
+
+// DELETE /api/blocks/audio/:id — remove (CASCADE cleans block_files)
+router.delete('/audio/:id', requireAuth, async (req, res) => {
+  try {
+    const existed = await store.remove(req.params.id);
+    if (!existed) return res.status(404).json({ error: 'Not found' });
+    return res.sendStatus(204);
+  } catch (err) {
+    console.error(`DELETE /audio/${req.params.id} db error:`, err.message);
     return res.status(500).json({ error: 'Database error' });
   }
 });

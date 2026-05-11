@@ -19,6 +19,14 @@ const PROJECT_ALLOWED_FIELDS = new Set([
   'title', 'description', 'status', 'stack', 'tags', 'size', 'date', 'repo_url', 'live_url',
 ]);
 
+const PHOTO_ALLOWED_FIELDS = new Set([
+  'title', 'caption', 'alt', 'tags', 'size', 'date',
+]);
+
+const AUDIO_ALLOWED_FIELDS = new Set([
+  'title', 'description', 'tags', 'size', 'date', 'artist', 'album', 'album_art',
+]);
+
 const VALID_PROJECT_STATUSES = ['active', 'paused', 'shipped'];
 
 /**
@@ -189,4 +197,102 @@ function validateDocument(body) {
   return { valid: errors.length === 0, errors };
 }
 
-module.exports = { validateLink, validateProject, validateDocument };
+/**
+ * Validate the text fields of a POST/PUT photo request.
+ * File validation (mime type, size) is handled by multer before this runs.
+ * On multipart requests, req.body values are always strings — tags may be a
+ * JSON-encoded array or a comma-separated string; the handler normalises it
+ * before calling this validator.
+ *
+ * @param {object} body - Parsed text fields (NOT raw req.body — caller normalises tags first)
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+function validatePhoto(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { valid: false, errors: ['Request body must be an object'] };
+  }
+
+  const errors = [];
+
+  for (const key of Object.keys(body)) {
+    if (!PHOTO_ALLOWED_FIELDS.has(key)) {
+      errors.push(`Unknown field: ${key}`);
+    }
+  }
+
+  if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
+    errors.push('title is required and must be a non-empty string');
+  }
+  if (body.caption !== undefined && typeof body.caption !== 'string') {
+    errors.push('caption must be a string');
+  }
+  if (body.alt !== undefined && typeof body.alt !== 'string') {
+    errors.push('alt must be a string');
+  }
+  if (body.size !== undefined && !VALID_SIZES.includes(body.size)) {
+    errors.push(`size must be one of: ${VALID_SIZES.join(', ')}`);
+  }
+  if (body.tags !== undefined) {
+    if (!Array.isArray(body.tags) || body.tags.some(t => typeof t !== 'string')) {
+      errors.push('tags must be an array of strings');
+    }
+  }
+  if (body.date !== undefined && !DATE_RE.test(body.date)) {
+    errors.push('date must be in YYYY-MM-DD format');
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Validate the text fields of a POST/PUT audio request.
+ *
+ * @param {object} body - Parsed text fields with tags already normalised to an array
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+function validateAudio(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { valid: false, errors: ['Request body must be an object'] };
+  }
+
+  const errors = [];
+
+  for (const key of Object.keys(body)) {
+    if (!AUDIO_ALLOWED_FIELDS.has(key)) {
+      errors.push(`Unknown field: ${key}`);
+    }
+  }
+
+  if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
+    errors.push('title is required and must be a non-empty string');
+  }
+  if (body.description !== undefined && typeof body.description !== 'string') {
+    errors.push('description must be a string');
+  }
+  if (body.artist !== undefined && typeof body.artist !== 'string') {
+    errors.push('artist must be a string');
+  }
+  if (body.album !== undefined && typeof body.album !== 'string') {
+    errors.push('album must be a string');
+  }
+  if (body.album_art !== undefined) {
+    if (typeof body.album_art !== 'string' || !URL_RE.test(body.album_art)) {
+      errors.push('album_art must be a valid http(s) URL');
+    }
+  }
+  if (body.size !== undefined && !VALID_SIZES.includes(body.size)) {
+    errors.push(`size must be one of: ${VALID_SIZES.join(', ')}`);
+  }
+  if (body.tags !== undefined) {
+    if (!Array.isArray(body.tags) || body.tags.some(t => typeof t !== 'string')) {
+      errors.push('tags must be an array of strings');
+    }
+  }
+  if (body.date !== undefined && !DATE_RE.test(body.date)) {
+    errors.push('date must be in YYYY-MM-DD format');
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+module.exports = { validateLink, validateProject, validateDocument, validatePhoto, validateAudio };

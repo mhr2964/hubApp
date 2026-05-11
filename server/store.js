@@ -108,4 +108,47 @@ async function remove(id) {
   return result.rowCount > 0;
 }
 
-module.exports = { getByType, getById, create, update, remove };
+// ─── block_files helpers ──────────────────────────────────────────────────────
+// Kept separate from the blocks CRUD above to make the binary path explicit.
+// The file row lifecycle is tied entirely to its parent block row: ON DELETE
+// CASCADE on the FK means no explicit removeFile is needed.
+
+/**
+ * Return the file record for a block, or null if none has been uploaded.
+ * The `bytes` field is a Node Buffer (pg decodes BYTEA automatically).
+ *
+ * @param {string} blockId
+ * @returns {Promise<{content_type: string, bytes: Buffer, size_bytes: number}|null>}
+ */
+async function getFile(blockId) {
+  const { rows } = await query(
+    'SELECT content_type, bytes, size_bytes FROM block_files WHERE block_id = $1',
+    [blockId],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Insert or replace the file for a block. Re-uploading the same block_id
+ * overwrites the previous bytes in place (ON CONFLICT DO UPDATE).
+ * size_bytes is computed from the buffer so callers cannot pass a wrong value.
+ *
+ * @param {string} blockId
+ * @param {string} contentType  - MIME type, e.g. "image/jpeg"
+ * @param {Buffer} bytes        - Raw binary content
+ * @returns {Promise<void>}
+ */
+async function putFile(blockId, contentType, bytes) {
+  const sizeBytes = bytes.length;
+  await query(
+    `INSERT INTO block_files (block_id, content_type, bytes, size_bytes)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (block_id) DO UPDATE
+       SET content_type = EXCLUDED.content_type,
+           bytes        = EXCLUDED.bytes,
+           size_bytes   = EXCLUDED.size_bytes`,
+    [blockId, contentType, bytes, sizeBytes],
+  );
+}
+
+module.exports = { getByType, getById, create, update, remove, getFile, putFile };

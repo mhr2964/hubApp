@@ -50,6 +50,7 @@ app.use(
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/blocks', require('./routes/api'));
+app.use('/api/content', require('./routes/content'));
 
 if (process.env.NODE_ENV === 'production') {
   const buildDir = path.join(__dirname, '../client/build');
