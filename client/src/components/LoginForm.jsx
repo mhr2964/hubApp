@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 export default function LoginForm({ onAuthed }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  // Re-entry guard so rapid double-submits don't bypass the disabled state
+  // (React re-render lags behind synchronous click bursts).
+  const loadingRef = useRef(false);
 
   const handleSubmit = async e => {
     e.preventDefault();
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setError(null);
     setLoading(true);
 
@@ -31,6 +36,7 @@ export default function LoginForm({ onAuthed }) {
     } catch {
       setError('Network error. Check your connection.');
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
   };

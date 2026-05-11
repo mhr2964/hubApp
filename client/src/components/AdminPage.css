@@ -16,6 +16,10 @@
   padding: 36px 32px;
 }
 
+.admin-card--wide {
+  max-width: 640px;
+}
+
 /* ── header row ── */
 .admin-header {
   display: flex;
