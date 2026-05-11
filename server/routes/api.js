@@ -94,6 +94,19 @@ router.get('/:type', async (req, res) => {
   }
 });
 
+// GET /api/blocks/id/:id — type-agnostic single-block lookup. Public (reads are public).
+// Uses a static /id/ prefix to avoid any shadowing risk with /:type or /:id catch-alls.
+router.get('/id/:id', async (req, res) => {
+  try {
+    const block = await store.getById(req.params.id);
+    if (!block) return res.status(404).json({ error: 'Block not found' });
+    return res.json(block);
+  } catch (err) {
+    console.error(`GET /id/${req.params.id} db error:`, err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
 // GET /api/blocks
 router.get('/', async (req, res) => {
   const { type, sort, search } = req.query;
