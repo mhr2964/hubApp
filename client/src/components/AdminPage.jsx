@@ -5,6 +5,8 @@ import LinkForm from './admin/LinkForm';
 import LinkList from './admin/LinkList';
 import ProjectForm from './admin/ProjectForm';
 import ProjectList from './admin/ProjectList';
+import DocumentForm from './admin/DocumentForm';
+import DocumentList from './admin/DocumentList';
 import './AdminPage.css';
 import './admin/admin.css';
 
@@ -102,10 +104,18 @@ function AdminTabs() {
         >
           projects
         </button>
+        <button
+          type="button"
+          className={`admin-tab${activeTab === 'documents' ? ' active' : ''}`}
+          onClick={() => handleTabChange('documents')}
+        >
+          documents
+        </button>
       </div>
 
       {activeTab === 'links' && <LinkManager />}
       {activeTab === 'projects' && <ProjectManager />}
+      {activeTab === 'documents' && <DocumentManager />}
     </div>
   );
 }
@@ -218,6 +228,64 @@ function ProjectManager() {
       {(mode === 'create' || mode === 'edit') && (
         <ProjectForm
           project={editingProject}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      )}
+    </>
+  );
+}
+
+function DocumentManager() {
+  const [mode, setMode] = useState('list');
+  const [editingDocument, setEditingDocument] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleSave = () => {
+    setRefreshKey(k => k + 1);
+    setMode('list');
+    setEditingDocument(null);
+  };
+
+  const handleCancel = () => {
+    setMode('list');
+    setEditingDocument(null);
+  };
+
+  const handleEdit = doc => {
+    setEditingDocument(doc);
+    setMode('edit');
+  };
+
+  const handleNewDocument = () => {
+    setEditingDocument(null);
+    setMode('create');
+  };
+
+  return (
+    <>
+      <div className="admin-section-header">
+        <span className="admin-section-title">
+          {mode === 'create' ? 'new document' : mode === 'edit' ? 'edit document' : 'all documents'}
+        </span>
+        {mode === 'list' && (
+          <button
+            type="button"
+            className="admin-new-btn"
+            onClick={handleNewDocument}
+          >
+            + new document
+          </button>
+        )}
+      </div>
+
+      {mode === 'list' && (
+        <DocumentList onEdit={handleEdit} refreshKey={refreshKey} />
+      )}
+
+      {(mode === 'create' || mode === 'edit') && (
+        <DocumentForm
+          document={editingDocument}
           onSave={handleSave}
           onCancel={handleCancel}
         />

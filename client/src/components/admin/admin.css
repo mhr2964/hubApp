@@ -343,3 +343,16 @@
 .list-status.error {
   color: #c77;
 }
+
+/* ── document form: markdown body textarea ── */
+.form-textarea--code {
+  font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  min-height: 200px;
+  line-height: 1.6;
+}
+
+/* ── document list: preview subtitle ── */
+.doc-row-preview {
+  font-style: italic;
+}
