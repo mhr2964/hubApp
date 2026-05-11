@@ -26,7 +26,7 @@
     "date": "2026-02-18",
     "tags": ["writing", "notes"],
     "size": "medium",
-    "src": null,
+    "src": "documents/systems-vs-goals.md",
     "preview": "Goals are for direction. Systems are for showing up."
   },
   {
@@ -36,7 +36,7 @@
     "date": "2026-01-30",
     "tags": ["writing", "essay"],
     "size": "small",
-    "src": null,
+    "src": "documents/on-solitude.md",
     "preview": "There is a difference between loneliness and being alone with yourself."
   },
   {
@@ -46,7 +46,7 @@
     "date": "2025-12-11",
     "tags": ["writing", "fiction"],
     "size": "medium",
-    "src": null,
+    "src": "documents/fragment-the-room.md",
     "preview": "He kept the window open even in winter. Said it reminded him that the world outside was still moving."
   }
 ]

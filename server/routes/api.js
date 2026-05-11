@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { marked } = require('marked');
+const sanitizeHtml = require('sanitize-html');
 const { BLOCK_REGISTRY, DEFAULT_SEARCH_FIELDS } = require('../blockRegistry');
 
 const router = express.Router();
@@ -65,7 +66,7 @@ router.get('/document/:id', (req, res) => {
 
   try {
     const raw = fs.readFileSync(filePath, 'utf8');
-    res.json({ ...doc, body: marked(raw) });
+    res.json({ ...doc, body: sanitizeHtml(marked(raw)) });
   } catch (err) {
     console.error(`Failed to read document ${doc.id}:`, err.message);
     res.status(500).json({ error: 'Could not read document content' });

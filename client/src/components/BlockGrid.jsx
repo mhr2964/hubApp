@@ -9,6 +9,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useAutoPromote } from '../hooks/useAutoPromote';
 import { floatParams } from '../utils/block';
 import { BLOCK_REGISTRY, getSpan } from '../blockRegistry';
+import { modalState } from '../state/modalState';
 import './BlockGrid.css';
 
 // Derived from BLOCK_REGISTRY — do not edit directly
@@ -154,7 +155,7 @@ export default function BlockGrid({ blocks: propBlocks }) {
   }, [blocks]);
 
   const isAutoPromotePaused = useCallback(
-    () => !!(activeIdRef.current || flipInProgress.current || Date.now() - lastActivityRef.current < 3000),
+    () => !!(activeIdRef.current || flipInProgress.current || Date.now() - lastActivityRef.current < 3000 || modalState.isOpen()),
     [],
   );
 
