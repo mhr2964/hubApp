@@ -1,0 +1,148 @@
+.admin-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d0d0d;
+  padding: 40px 20px;
+}
+
+.admin-card {
+  width: 100%;
+  max-width: 420px;
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  padding: 36px 32px;
+}
+
+/* ── header row ── */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.admin-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.admin-status {
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.admin-placeholder {
+  color: #666;
+  font-size: 13px;
+  line-height: 1.6;
+  border: 1px solid #1e1e1e;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 28px;
+}
+
+.admin-placeholder code {
+  color: #aaa;
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 12px;
+}
+
+.admin-back {
+  display: inline-block;
+  color: #555;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.admin-back:hover {
+  color: #aaa;
+}
+
+.admin-logout {
+  padding: 5px 14px;
+  border: 1px solid #333;
+  border-radius: 20px;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: lowercase;
+}
+
+.admin-logout:hover {
+  border-color: #888;
+  color: #fff;
+}
+
+/* ── login form ── */
+.login-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 28px;
+}
+
+.login-field {
+  margin-bottom: 12px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: #0d0d0d;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.login-input::placeholder {
+  color: #444;
+}
+
+.login-input:focus {
+  border-color: #555;
+}
+
+.login-input:disabled {
+  opacity: 0.5;
+}
+
+.login-error {
+  color: #e55;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.login-submit {
+  width: 100%;
+  padding: 10px 14px;
+  margin-top: 4px;
+  background: #fff;
+  border: none;
+  border-radius: 6px;
+  color: #000;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  text-transform: lowercase;
+}
+
+.login-submit:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.login-submit:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
