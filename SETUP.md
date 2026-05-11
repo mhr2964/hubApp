@@ -40,6 +40,15 @@ Default value works with the Docker one-liner above:
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/hubapp
 ```
 
+### Optional: GitHub token (for `POST /api/blocks/project/from-repo`)
+
+The endpoint works without a token but is subject to GitHub's 60 req/hr unauthenticated limit. To raise that to 5 000 req/hr, add a personal access token:
+
+1. Generate one at <https://github.com/settings/tokens> — minimum scope `public_repo`.
+2. Set `GITHUB_TOKEN=<token>` in your `.env`.
+
+On Heroku: `heroku config:set GITHUB_TOKEN=<token>`.
+
 ## 3. Install dependencies
 
 ```sh

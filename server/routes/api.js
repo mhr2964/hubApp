@@ -9,7 +9,7 @@ const ogs = require('open-graph-scraper');
 const { BLOCK_REGISTRY, DEFAULT_SEARCH_FIELDS } = require('../blockRegistry');
 const store = require('../store');
 const { requireAuth } = require('../middleware/auth');
-const { validateLink } = require('../validators/blocks');
+const { validateLink, validateProject } = require('../validators/blocks');
 
 const router = express.Router();
 
@@ -287,6 +287,151 @@ router.delete('/link/:id', requireAuth, async (req, res) => {
     return res.sendStatus(204);
   } catch (err) {
     console.error(`DELETE /link/${req.params.id} db error:`, err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Project routes
+// ---------------------------------------------------------------------------
+
+const GITHUB_REPO_RE = /^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?\/?$/i;
+const GITHUB_TIMEOUT_MS = 5000;
+
+// POST /api/blocks/project/from-repo — fetch GitHub metadata, does NOT persist
+router.post('/project/from-repo', requireAuth, async (req, res) => {
+  const { repo_url } = req.body;
+  if (!repo_url || typeof repo_url !== 'string') {
+    return res.status(422).json({ error: 'repo_url is required' });
+  }
+
+  const match = GITHUB_REPO_RE.exec(repo_url.trim());
+  if (!match) {
+    return res.status(422).json({ error: 'Not a recognizable GitHub repo URL' });
+  }
+
+  const [, owner, repo] = match;
+  const headers = { 'User-Agent': 'hub-app', Accept: 'application/vnd.github+json' };
+  if (process.env.GITHUB_TOKEN) {
+    headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GITHUB_TIMEOUT_MS);
+
+  let repoData, langsData;
+  try {
+    const [repoRes, langsRes] = await Promise.all([
+      fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers, signal: controller.signal }),
+      fetch(`https://api.github.com/repos/${owner}/${repo}/languages`, { headers, signal: controller.signal }),
+    ]);
+
+    if (repoRes.status === 404) {
+      return res.status(404).json({ error: 'GitHub repo not found' });
+    }
+    if (!repoRes.ok) {
+      console.error(`GitHub API error for ${owner}/${repo}: ${repoRes.status}`);
+      return res.status(502).json({ error: 'GitHub API error' });
+    }
+    if (!langsRes.ok) {
+      console.error(`GitHub languages API error for ${owner}/${repo}: ${langsRes.status}`);
+      return res.status(502).json({ error: 'GitHub API error' });
+    }
+
+    repoData = await repoRes.json();
+    langsData = await langsRes.json();
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      console.warn(`GitHub fetch timeout for ${owner}/${repo}`);
+      return res.status(504).json({ error: 'GitHub fetch timed out' });
+    }
+    console.error(`GitHub fetch failed for ${owner}/${repo}:`, err.message);
+    return res.status(502).json({ error: 'Failed to fetch GitHub metadata' });
+  } finally {
+    clearTimeout(timer);
+  }
+
+  // Top 3 languages by byte count (API returns { Lang: bytes } object).
+  const stack = Object.entries(langsData)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([lang]) => lang);
+
+  return res.json({
+    title: repoData.name ?? undefined,
+    description: repoData.description ?? undefined,
+    repo_url: repoData.html_url ?? undefined,
+    live_url: repoData.homepage || undefined,
+    stack,
+  });
+});
+
+// POST /api/blocks/project — create a new project block
+router.post('/project', requireAuth, async (req, res) => {
+  const { valid, errors } = validateProject(req.body);
+  if (!valid) return res.status(400).json({ errors });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const block = {
+    id: `project-${nanoid(8)}`,
+    type: 'project',
+    title: req.body.title.trim(),
+    description: req.body.description ?? undefined,
+    status: req.body.status ?? 'active',
+    stack: req.body.stack ?? [],
+    tags: req.body.tags ?? [],
+    size: req.body.size ?? undefined,
+    date: req.body.date ?? today,
+    repo_url: req.body.repo_url ?? undefined,
+    live_url: req.body.live_url ?? undefined,
+  };
+
+  try {
+    const created = await store.create(block);
+    return res.status(201).json(created);
+  } catch (err) {
+    console.error('POST /project db error:', err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// PUT /api/blocks/project/:id — full replace
+router.put('/project/:id', requireAuth, async (req, res) => {
+  const { valid, errors } = validateProject(req.body);
+  if (!valid) return res.status(400).json({ errors });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const block = {
+    type: 'project',
+    title: req.body.title.trim(),
+    description: req.body.description ?? undefined,
+    status: req.body.status ?? 'active',
+    stack: req.body.stack ?? [],
+    tags: req.body.tags ?? [],
+    size: req.body.size ?? undefined,
+    date: req.body.date ?? today,
+    repo_url: req.body.repo_url ?? undefined,
+    live_url: req.body.live_url ?? undefined,
+  };
+
+  try {
+    const updated = await store.update(req.params.id, block);
+    if (!updated) return res.status(404).json({ error: 'Not found' });
+    return res.json(updated);
+  } catch (err) {
+    console.error(`PUT /project/${req.params.id} db error:`, err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// DELETE /api/blocks/project/:id — remove
+router.delete('/project/:id', requireAuth, async (req, res) => {
+  try {
+    const existed = await store.remove(req.params.id);
+    if (!existed) return res.status(404).json({ error: 'Not found' });
+    return res.sendStatus(204);
+  } catch (err) {
+    console.error(`DELETE /project/${req.params.id} db error:`, err.message);
     return res.status(500).json({ error: 'Database error' });
   }
 });

@@ -11,6 +11,12 @@ const LINK_ALLOWED_FIELDS = new Set([
   'title', 'url', 'description', 'og_image', 'favicon', 'tags', 'size', 'date',
 ]);
 
+const PROJECT_ALLOWED_FIELDS = new Set([
+  'title', 'description', 'status', 'stack', 'tags', 'size', 'date', 'repo_url', 'live_url',
+]);
+
+const VALID_PROJECT_STATUSES = ['active', 'paused', 'shipped'];
+
 /**
  * Validate the body of a POST/PUT link request.
  *
@@ -70,4 +76,66 @@ function validateLink(body) {
   return { valid: errors.length === 0, errors };
 }
 
-module.exports = { validateLink };
+/**
+ * Validate the body of a POST/PUT project request.
+ *
+ * @param {object} body - Raw request body
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+function validateProject(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { valid: false, errors: ['Request body must be a JSON object'] };
+  }
+
+  const errors = [];
+
+  // Reject unknown fields to keep the data clean.
+  for (const key of Object.keys(body)) {
+    if (!PROJECT_ALLOWED_FIELDS.has(key)) {
+      errors.push(`Unknown field: ${key}`);
+    }
+  }
+
+  // Required fields.
+  if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
+    errors.push('title is required and must be a non-empty string');
+  }
+
+  // Optional fields — only validate when present.
+  if (body.description !== undefined && typeof body.description !== 'string') {
+    errors.push('description must be a string');
+  }
+  if (body.status !== undefined && !VALID_PROJECT_STATUSES.includes(body.status)) {
+    errors.push(`status must be one of: ${VALID_PROJECT_STATUSES.join(', ')}`);
+  }
+  if (body.stack !== undefined) {
+    if (!Array.isArray(body.stack) || body.stack.some(s => typeof s !== 'string')) {
+      errors.push('stack must be an array of strings');
+    }
+  }
+  if (body.tags !== undefined) {
+    if (!Array.isArray(body.tags) || body.tags.some(t => typeof t !== 'string')) {
+      errors.push('tags must be an array of strings');
+    }
+  }
+  if (body.size !== undefined && !VALID_SIZES.includes(body.size)) {
+    errors.push(`size must be one of: ${VALID_SIZES.join(', ')}`);
+  }
+  if (body.date !== undefined && !DATE_RE.test(body.date)) {
+    errors.push('date must be in YYYY-MM-DD format');
+  }
+  if (body.repo_url !== undefined) {
+    if (typeof body.repo_url !== 'string' || !URL_RE.test(body.repo_url.trim())) {
+      errors.push('repo_url must be a valid http(s) URL');
+    }
+  }
+  if (body.live_url !== undefined) {
+    if (typeof body.live_url !== 'string' || !URL_RE.test(body.live_url.trim())) {
+      errors.push('live_url must be a valid http(s) URL');
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+module.exports = { validateLink, validateProject };
