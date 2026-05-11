@@ -25,6 +25,10 @@ if (!sessionSecret) {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust the X-Forwarded-Proto header set by Heroku's router so that
+// req.protocol returns 'https' in production rather than 'http'.
+app.set('trust proxy', true);
+
 app.use(cors());
 app.use(express.json());
 
@@ -51,6 +55,11 @@ app.use(
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/blocks', require('./routes/api'));
 app.use('/api/content', require('./routes/content'));
+
+// Share route — must be mounted BEFORE the SPA static catch-all below.
+// Intercepts /b/:id, injects OG meta into index.html, and serves the result.
+// In dev, returns a JSON preview of the OG values (no build/index.html exists).
+app.use('/b', require('./routes/share'));
 
 if (process.env.NODE_ENV === 'production') {
   const buildDir = path.join(__dirname, '../client/build');
