@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import FilterBar from './components/FilterBar';
 import BlockGrid from './components/BlockGrid';
 import AdminPage from './components/AdminPage';
+import FocusedBlock from './components/FocusedBlock';
 import { useBlocks } from './hooks/useBlocks';
 import './App.css';
 
@@ -32,6 +33,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/admin" element={<AdminPage />} />
+      <Route path="/b/:id" element={<FocusedBlock />} />
     </Routes>
   );
 }
