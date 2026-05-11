@@ -111,6 +111,13 @@
   text-overflow: ellipsis;
 }
 
+.project-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
 .link-row-url {
   font-size: 11px;
   color: #555;
