@@ -7,6 +7,10 @@ import ProjectForm from './admin/ProjectForm';
 import ProjectList from './admin/ProjectList';
 import DocumentForm from './admin/DocumentForm';
 import DocumentList from './admin/DocumentList';
+import PhotoForm from './admin/PhotoForm';
+import PhotoList from './admin/PhotoList';
+import AudioForm from './admin/AudioForm';
+import AudioList from './admin/AudioList';
 import './AdminPage.css';
 import './admin/admin.css';
 
@@ -111,11 +115,27 @@ function AdminTabs() {
         >
           documents
         </button>
+        <button
+          type="button"
+          className={`admin-tab${activeTab === 'photos' ? ' active' : ''}`}
+          onClick={() => handleTabChange('photos')}
+        >
+          photos
+        </button>
+        <button
+          type="button"
+          className={`admin-tab${activeTab === 'audio' ? ' active' : ''}`}
+          onClick={() => handleTabChange('audio')}
+        >
+          audio
+        </button>
       </div>
 
       {activeTab === 'links' && <LinkManager />}
       {activeTab === 'projects' && <ProjectManager />}
       {activeTab === 'documents' && <DocumentManager />}
+      {activeTab === 'photos' && <PhotoManager />}
+      {activeTab === 'audio' && <AudioManager />}
     </div>
   );
 }
@@ -286,6 +306,122 @@ function DocumentManager() {
       {(mode === 'create' || mode === 'edit') && (
         <DocumentForm
           document={editingDocument}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      )}
+    </>
+  );
+}
+
+function PhotoManager() {
+  const [mode, setMode] = useState('list');
+  const [editingPhoto, setEditingPhoto] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleSave = () => {
+    setRefreshKey(k => k + 1);
+    setMode('list');
+    setEditingPhoto(null);
+  };
+
+  const handleCancel = () => {
+    setMode('list');
+    setEditingPhoto(null);
+  };
+
+  const handleEdit = photo => {
+    setEditingPhoto(photo);
+    setMode('edit');
+  };
+
+  const handleNewPhoto = () => {
+    setEditingPhoto(null);
+    setMode('create');
+  };
+
+  return (
+    <>
+      <div className="admin-section-header">
+        <span className="admin-section-title">
+          {mode === 'create' ? 'new photo' : mode === 'edit' ? 'edit photo' : 'all photos'}
+        </span>
+        {mode === 'list' && (
+          <button
+            type="button"
+            className="admin-new-btn"
+            onClick={handleNewPhoto}
+          >
+            + new photo
+          </button>
+        )}
+      </div>
+
+      {mode === 'list' && (
+        <PhotoList onEdit={handleEdit} refreshKey={refreshKey} />
+      )}
+
+      {(mode === 'create' || mode === 'edit') && (
+        <PhotoForm
+          photo={editingPhoto}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      )}
+    </>
+  );
+}
+
+function AudioManager() {
+  const [mode, setMode] = useState('list');
+  const [editingAudio, setEditingAudio] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleSave = () => {
+    setRefreshKey(k => k + 1);
+    setMode('list');
+    setEditingAudio(null);
+  };
+
+  const handleCancel = () => {
+    setMode('list');
+    setEditingAudio(null);
+  };
+
+  const handleEdit = track => {
+    setEditingAudio(track);
+    setMode('edit');
+  };
+
+  const handleNewAudio = () => {
+    setEditingAudio(null);
+    setMode('create');
+  };
+
+  return (
+    <>
+      <div className="admin-section-header">
+        <span className="admin-section-title">
+          {mode === 'create' ? 'new audio' : mode === 'edit' ? 'edit audio' : 'all audio'}
+        </span>
+        {mode === 'list' && (
+          <button
+            type="button"
+            className="admin-new-btn"
+            onClick={handleNewAudio}
+          >
+            + new audio
+          </button>
+        )}
+      </div>
+
+      {mode === 'list' && (
+        <AudioList onEdit={handleEdit} refreshKey={refreshKey} />
+      )}
+
+      {(mode === 'create' || mode === 'edit') && (
+        <AudioForm
+          audio={editingAudio}
           onSave={handleSave}
           onCancel={handleCancel}
         />

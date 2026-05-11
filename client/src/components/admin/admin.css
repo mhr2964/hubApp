@@ -6,6 +6,7 @@
 
 .admin-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 24px;
   border-bottom: 1px solid #1e1e1e;
@@ -355,4 +356,28 @@
 /* ── document list: preview subtitle ── */
 .doc-row-preview {
   font-style: italic;
+}
+
+/* ── photo thumbnails ── */
+.photo-thumb {
+  height: 40px;
+  width: auto;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.photo-preview {
+  height: 120px;
+  width: auto;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/* ── audio / photo form hint text ── */
+.form-hint {
+  font-size: 11px;
+  color: #555;
+  margin: 0;
 }

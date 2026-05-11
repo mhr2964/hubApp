@@ -15,8 +15,11 @@ export function formatDate(dateStr) {
   });
 }
 
-// Returns a usable src: passes absolute URLs through, prepends /api/content/ for relative paths.
+// Returns a usable src. Passes through absolute URLs and already-resolved server paths.
+// Bare relative paths (e.g. legacy "photos/foo.jpg") get the /api/content/ prefix.
 export function resolveMediaSrc(src) {
   if (!src) return null;
-  return src.startsWith('http') ? src : `/api/content/${src}`;
+  if (src.startsWith('http')) return src;
+  if (src.startsWith('/')) return src;
+  return `/api/content/${src}`;
 }
