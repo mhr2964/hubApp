@@ -17,7 +17,6 @@ export default function AudioForm({ audio, onSave, onCancel }) {
   const submittingRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverErrors, setServerErrors] = useState([]);
-  const [successMsg, setSuccessMsg] = useState(null);
 
   useEffect(() => {
     setTitle(audio?.title ?? '');
@@ -29,7 +28,6 @@ export default function AudioForm({ audio, onSave, onCancel }) {
     setSize(audio?.size ?? 'small');
     setFile(null);
     setServerErrors([]);
-    setSuccessMsg(null);
   }, [audio]);
 
   const handleSubmit = e => {
@@ -43,7 +41,6 @@ export default function AudioForm({ audio, onSave, onCancel }) {
 
     submittingRef.current = true;
     setServerErrors([]);
-    setSuccessMsg(null);
     setSubmitting(true);
 
     const formData = new FormData();
@@ -85,7 +82,6 @@ export default function AudioForm({ audio, onSave, onCancel }) {
       })
       .then(saved => {
         if (!saved) return;
-        setSuccessMsg('Audio saved.');
         onSave(saved);
       })
       .catch(() => {
@@ -219,7 +215,6 @@ export default function AudioForm({ audio, onSave, onCancel }) {
       </div>
 
       <div className="form-footer">
-        {successMsg && <span className="form-success">{successMsg}</span>}
         <button
           type="button"
           className="form-cancel-btn"

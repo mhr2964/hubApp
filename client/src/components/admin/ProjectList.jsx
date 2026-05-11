@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function ProjectList({ onEdit, refreshKey }) {
+export default function ProjectList({ onEdit, refreshKey, onDelete }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -41,6 +41,7 @@ export default function ProjectList({ onEdit, refreshKey }) {
       .then(res => {
         if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
         setProjects(prev => prev.filter(p => p.id !== project.id));
+        onDelete?.();
       })
       .catch(err => {
         setError(err.message);

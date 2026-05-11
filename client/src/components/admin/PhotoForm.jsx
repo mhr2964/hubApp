@@ -16,7 +16,6 @@ export default function PhotoForm({ photo, onSave, onCancel }) {
   const submittingRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverErrors, setServerErrors] = useState([]);
-  const [successMsg, setSuccessMsg] = useState(null);
 
   useEffect(() => {
     setTitle(photo?.title ?? '');
@@ -26,7 +25,6 @@ export default function PhotoForm({ photo, onSave, onCancel }) {
     setSize(photo?.size ?? 'medium');
     setFile(null);
     setServerErrors([]);
-    setSuccessMsg(null);
   }, [photo]);
 
   const handleSubmit = e => {
@@ -40,7 +38,6 @@ export default function PhotoForm({ photo, onSave, onCancel }) {
 
     submittingRef.current = true;
     setServerErrors([]);
-    setSuccessMsg(null);
     setSubmitting(true);
 
     const formData = new FormData();
@@ -80,7 +77,6 @@ export default function PhotoForm({ photo, onSave, onCancel }) {
       })
       .then(saved => {
         if (!saved) return;
-        setSuccessMsg('Photo saved.');
         onSave(saved);
       })
       .catch(() => {
@@ -198,7 +194,6 @@ export default function PhotoForm({ photo, onSave, onCancel }) {
       </div>
 
       <div className="form-footer">
-        {successMsg && <span className="form-success">{successMsg}</span>}
         <button
           type="button"
           className="form-cancel-btn"

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { resolveMediaSrc } from '../../utils/block';
 
-export default function PhotoList({ onEdit, refreshKey }) {
+export default function PhotoList({ onEdit, refreshKey, onDelete }) {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,6 +42,7 @@ export default function PhotoList({ onEdit, refreshKey }) {
       .then(res => {
         if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
         setPhotos(prev => prev.filter(p => p.id !== photo.id));
+        onDelete?.();
       })
       .catch(err => {
         setError(err.message);

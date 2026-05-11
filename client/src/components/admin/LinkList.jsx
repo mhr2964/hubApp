@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function LinkList({ onEdit, refreshKey }) {
+export default function LinkList({ onEdit, refreshKey, onDelete }) {
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -41,6 +41,7 @@ export default function LinkList({ onEdit, refreshKey }) {
       .then(res => {
         if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
         setLinks(prev => prev.filter(l => l.id !== link.id));
+        onDelete?.();
       })
       .catch(err => {
         setError(err.message);

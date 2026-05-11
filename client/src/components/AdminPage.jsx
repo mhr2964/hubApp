@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import LoginForm from './LoginForm';
 import LinkForm from './admin/LinkForm';
 import LinkList from './admin/LinkList';
@@ -11,11 +11,16 @@ import PhotoForm from './admin/PhotoForm';
 import PhotoList from './admin/PhotoList';
 import AudioForm from './admin/AudioForm';
 import AudioList from './admin/AudioList';
+import { ToastProvider, useToast } from './admin/Toast';
+import { useBlocksContext } from '../state/BlocksContext';
 import './AdminPage.css';
 import './admin/admin.css';
 
+const VALID_TABS = ['links', 'projects', 'documents', 'photos', 'audio'];
+
 export default function AdminPage() {
   const [authed, setAuthed] = useState(null);
+  const { tab } = useParams();
 
   const checkAuth = () => {
     const controller = new AbortController();
@@ -66,69 +71,44 @@ export default function AdminPage() {
     );
   }
 
+  const activeTab = VALID_TABS.includes(tab) ? tab : 'links';
+
   return (
-    <div className="admin-page">
-      <div className="admin-card admin-card--wide">
-        <header className="admin-header">
-          <h1 className="admin-title">hub admin</h1>
-          <button type="button" className="admin-logout" onClick={handleLogout}>
-            log out
-          </button>
-        </header>
-        <AdminTabs />
-        <Link to="/" className="admin-back">
-          ← back to gallery
-        </Link>
+    <ToastProvider>
+      <div className="admin-page">
+        <div className="admin-card admin-card--wide">
+          <header className="admin-header">
+            <h1 className="admin-title">hub admin</h1>
+            <button type="button" className="admin-logout" onClick={handleLogout}>
+              log out
+            </button>
+          </header>
+          <AdminTabs activeTab={activeTab} />
+          <Link to="/" className="admin-back">
+            ← back to gallery
+          </Link>
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }
 
-function AdminTabs() {
-  const [activeTab, setActiveTab] = useState('links');
-
-  const handleTabChange = tab => {
-    setActiveTab(tab);
-  };
+function AdminTabs({ activeTab }) {
+  const navigate = useNavigate();
 
   return (
     <div className="admin-section">
       <div className="admin-tabs">
-        <button
-          type="button"
-          className={`admin-tab${activeTab === 'links' ? ' active' : ''}`}
-          onClick={() => handleTabChange('links')}
-        >
-          links
-        </button>
-        <button
-          type="button"
-          className={`admin-tab${activeTab === 'projects' ? ' active' : ''}`}
-          onClick={() => handleTabChange('projects')}
-        >
-          projects
-        </button>
-        <button
-          type="button"
-          className={`admin-tab${activeTab === 'documents' ? ' active' : ''}`}
-          onClick={() => handleTabChange('documents')}
-        >
-          documents
-        </button>
-        <button
-          type="button"
-          className={`admin-tab${activeTab === 'photos' ? ' active' : ''}`}
-          onClick={() => handleTabChange('photos')}
-        >
-          photos
-        </button>
-        <button
-          type="button"
-          className={`admin-tab${activeTab === 'audio' ? ' active' : ''}`}
-          onClick={() => handleTabChange('audio')}
-        >
-          audio
-        </button>
+        {VALID_TABS.map(tab => (
+          <button
+            key={tab}
+            type="button"
+            className={`admin-tab${activeTab === tab ? ' active' : ''}`}
+            onClick={() => navigate(`/admin/${tab}`)}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'links' && <LinkManager />}
@@ -144,11 +124,15 @@ function LinkManager() {
   const [mode, setMode] = useState('list');
   const [editingLink, setEditingLink] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { pushToast } = useToast();
+  const { revalidate } = useBlocksContext();
 
   const handleSave = () => {
     setRefreshKey(k => k + 1);
     setMode('list');
     setEditingLink(null);
+    revalidate();
+    pushToast('Link saved');
   };
 
   const handleCancel = () => {
@@ -184,7 +168,7 @@ function LinkManager() {
       </div>
 
       {mode === 'list' && (
-        <LinkList onEdit={handleEdit} refreshKey={refreshKey} />
+        <LinkList onEdit={handleEdit} refreshKey={refreshKey} onDelete={revalidate} />
       )}
 
       {(mode === 'create' || mode === 'edit') && (
@@ -202,11 +186,15 @@ function ProjectManager() {
   const [mode, setMode] = useState('list');
   const [editingProject, setEditingProject] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { pushToast } = useToast();
+  const { revalidate } = useBlocksContext();
 
   const handleSave = () => {
     setRefreshKey(k => k + 1);
     setMode('list');
     setEditingProject(null);
+    revalidate();
+    pushToast('Project saved');
   };
 
   const handleCancel = () => {
@@ -242,7 +230,7 @@ function ProjectManager() {
       </div>
 
       {mode === 'list' && (
-        <ProjectList onEdit={handleEdit} refreshKey={refreshKey} />
+        <ProjectList onEdit={handleEdit} refreshKey={refreshKey} onDelete={revalidate} />
       )}
 
       {(mode === 'create' || mode === 'edit') && (
@@ -260,11 +248,15 @@ function DocumentManager() {
   const [mode, setMode] = useState('list');
   const [editingDocument, setEditingDocument] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { pushToast } = useToast();
+  const { revalidate } = useBlocksContext();
 
   const handleSave = () => {
     setRefreshKey(k => k + 1);
     setMode('list');
     setEditingDocument(null);
+    revalidate();
+    pushToast('Document saved');
   };
 
   const handleCancel = () => {
@@ -300,7 +292,7 @@ function DocumentManager() {
       </div>
 
       {mode === 'list' && (
-        <DocumentList onEdit={handleEdit} refreshKey={refreshKey} />
+        <DocumentList onEdit={handleEdit} refreshKey={refreshKey} onDelete={revalidate} />
       )}
 
       {(mode === 'create' || mode === 'edit') && (
@@ -318,11 +310,15 @@ function PhotoManager() {
   const [mode, setMode] = useState('list');
   const [editingPhoto, setEditingPhoto] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { pushToast } = useToast();
+  const { revalidate } = useBlocksContext();
 
   const handleSave = () => {
     setRefreshKey(k => k + 1);
     setMode('list');
     setEditingPhoto(null);
+    revalidate();
+    pushToast('Photo saved');
   };
 
   const handleCancel = () => {
@@ -358,7 +354,7 @@ function PhotoManager() {
       </div>
 
       {mode === 'list' && (
-        <PhotoList onEdit={handleEdit} refreshKey={refreshKey} />
+        <PhotoList onEdit={handleEdit} refreshKey={refreshKey} onDelete={revalidate} />
       )}
 
       {(mode === 'create' || mode === 'edit') && (
@@ -376,11 +372,15 @@ function AudioManager() {
   const [mode, setMode] = useState('list');
   const [editingAudio, setEditingAudio] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { pushToast } = useToast();
+  const { revalidate } = useBlocksContext();
 
   const handleSave = () => {
     setRefreshKey(k => k + 1);
     setMode('list');
     setEditingAudio(null);
+    revalidate();
+    pushToast('Audio saved');
   };
 
   const handleCancel = () => {
@@ -416,7 +416,7 @@ function AudioManager() {
       </div>
 
       {mode === 'list' && (
-        <AudioList onEdit={handleEdit} refreshKey={refreshKey} />
+        <AudioList onEdit={handleEdit} refreshKey={refreshKey} onDelete={revalidate} />
       )}
 
       {(mode === 'create' || mode === 'edit') && (

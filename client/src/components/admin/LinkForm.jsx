@@ -24,7 +24,6 @@ export default function LinkForm({ link, onSave, onCancel }) {
   const [fetching, setFetching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverErrors, setServerErrors] = useState([]);
-  const [successMsg, setSuccessMsg] = useState(null);
 
   // Abort any in-flight metadata fetch on unmount
   useEffect(() => {
@@ -43,7 +42,6 @@ export default function LinkForm({ link, onSave, onCancel }) {
     setFetchStatus(null);
     setFetchError(false);
     setServerErrors([]);
-    setSuccessMsg(null);
   }, [link]);
 
   const handleFetchMetadata = () => {
@@ -123,7 +121,6 @@ export default function LinkForm({ link, onSave, onCancel }) {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setServerErrors([]);
-    setSuccessMsg(null);
     setSubmitting(true);
 
     const endpoint = isEdit
@@ -152,7 +149,6 @@ export default function LinkForm({ link, onSave, onCancel }) {
       })
       .then(saved => {
         if (!saved) return;
-        setSuccessMsg('Link saved. Reload the home page to see it in the grid.');
         onSave(saved);
       })
       .catch(() => {
@@ -284,7 +280,6 @@ export default function LinkForm({ link, onSave, onCancel }) {
       </div>
 
       <div className="form-footer">
-        {successMsg && <span className="form-success">{successMsg}</span>}
         <button
           type="button"
           className="form-cancel-btn"

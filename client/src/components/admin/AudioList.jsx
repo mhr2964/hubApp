@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function AudioList({ onEdit, refreshKey }) {
+export default function AudioList({ onEdit, refreshKey, onDelete }) {
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -41,6 +41,7 @@ export default function AudioList({ onEdit, refreshKey }) {
       .then(res => {
         if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
         setTracks(prev => prev.filter(t => t.id !== track.id));
+        onDelete?.();
       })
       .catch(err => {
         setError(err.message);

@@ -15,7 +15,6 @@ export default function DocumentForm({ document, onSave, onCancel }) {
 
   const [submitting, setSubmitting] = useState(false);
   const [serverErrors, setServerErrors] = useState([]);
-  const [successMsg, setSuccessMsg] = useState(null);
 
   useEffect(() => {
     setTitle(document?.title ?? '');
@@ -24,7 +23,6 @@ export default function DocumentForm({ document, onSave, onCancel }) {
     setTags(Array.isArray(document?.tags) ? document.tags.join(', ') : (document?.tags ?? ''));
     setSize(document?.size ?? 'medium');
     setServerErrors([]);
-    setSuccessMsg(null);
   }, [document]);
 
   const buildPayload = () => {
@@ -45,7 +43,6 @@ export default function DocumentForm({ document, onSave, onCancel }) {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setServerErrors([]);
-    setSuccessMsg(null);
     setSubmitting(true);
 
     const endpoint = isEdit
@@ -76,7 +73,6 @@ export default function DocumentForm({ document, onSave, onCancel }) {
       })
       .then(saved => {
         if (!saved) return;
-        setSuccessMsg('Document saved.');
         onSave(saved);
       })
       .catch(() => {
@@ -167,7 +163,6 @@ export default function DocumentForm({ document, onSave, onCancel }) {
       </div>
 
       <div className="form-footer">
-        {successMsg && <span className="form-success">{successMsg}</span>}
         <button
           type="button"
           className="form-cancel-btn"

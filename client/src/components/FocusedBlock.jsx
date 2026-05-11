@@ -250,18 +250,19 @@ export default function FocusedBlock() {
     setLoading(true);
     setError(null);
 
-    fetch('/api/blocks', { signal: controller.signal })
+    fetch(`/api/blocks/id/${id}`, { signal: controller.signal })
       .then(res => {
+        if (res.status === 404) {
+          setError('not-found');
+          setLoading(false);
+          return null;
+        }
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
         return res.json();
       })
       .then(data => {
-        const found = Array.isArray(data) ? data.find(b => b.id === id) : null;
-        if (!found) {
-          setError('not-found');
-        } else {
-          setBlock(found);
-        }
+        if (!data) return;
+        setBlock(data);
         setLoading(false);
       })
       .catch(err => {

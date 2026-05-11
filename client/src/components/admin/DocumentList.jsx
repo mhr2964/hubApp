@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function DocumentList({ onEdit, refreshKey }) {
+export default function DocumentList({ onEdit, refreshKey, onDelete }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -41,6 +41,7 @@ export default function DocumentList({ onEdit, refreshKey }) {
       .then(res => {
         if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
         setDocuments(prev => prev.filter(d => d.id !== doc.id));
+        onDelete?.();
       })
       .catch(err => {
         setError(err.message);

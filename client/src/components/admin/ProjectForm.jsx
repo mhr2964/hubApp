@@ -25,7 +25,6 @@ export default function ProjectForm({ project, onSave, onCancel }) {
   const [fetching, setFetching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverErrors, setServerErrors] = useState([]);
-  const [successMsg, setSuccessMsg] = useState(null);
 
   useEffect(() => {
     return () => fetchControllerRef.current?.abort();
@@ -43,7 +42,6 @@ export default function ProjectForm({ project, onSave, onCancel }) {
     setFetchStatus(null);
     setFetchError(false);
     setServerErrors([]);
-    setSuccessMsg(null);
   }, [project]);
 
   const handleFetchFromRepo = () => {
@@ -121,7 +119,6 @@ export default function ProjectForm({ project, onSave, onCancel }) {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setServerErrors([]);
-    setSuccessMsg(null);
     setSubmitting(true);
 
     const endpoint = isEdit
@@ -150,7 +147,6 @@ export default function ProjectForm({ project, onSave, onCancel }) {
       })
       .then(saved => {
         if (!saved) return;
-        setSuccessMsg('Project saved.');
         onSave(saved);
       })
       .catch(() => {
@@ -296,7 +292,6 @@ export default function ProjectForm({ project, onSave, onCancel }) {
       </div>
 
       <div className="form-footer">
-        {successMsg && <span className="form-success">{successMsg}</span>}
         <button
           type="button"
           className="form-cancel-btn"
